@@ -42,11 +42,11 @@ RUN chown -R nodeuser:nodejs /app
 USER nodeuser
 
 # Expose port (default to 3000, can be overridden)
-EXPOSE 3000
+EXPOSE 3001
 
 # Health check using Node.js built-in http module
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3000) + '/api/v1/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
+  CMD node -e "require('http').get('http://localhost:' + (process.env.PORT || 3001) + '/api/v1/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
 
 # Start the application
 CMD ["npm", "start"]
