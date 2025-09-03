@@ -17,14 +17,13 @@ class ExpressServer extends BaseExpressServer {
   @retry(3, 2000)
   public async startExpressServer() {
     await deleteFile();
-    const dbconnection = databaseInstance().connectToDatabase
+    const dbconnection = databaseInstance();
     const app: Application = express();
     const port = getEnvValue("PORT") as string;
 
     await initalizeMiddleware(app);
     await initalizeRoutes(app);
-    const giveconnection=await dbconnection()
-    await createJson(giveconnection)
+    await createJson(dbconnection.connectToDatabase)
 
 
     app.listen(port, () => {
