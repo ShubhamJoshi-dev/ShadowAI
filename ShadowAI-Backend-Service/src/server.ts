@@ -6,6 +6,8 @@ import initalizeRoutes from "./routers/server.router";
 import { UnknownAny } from "./types/types";
 import { getEnvValue } from "./utils/env.utils";
 import { retry } from "./decorators/retry.decorator";
+import databaseInstance from "./database/connect";
+import {createJson, deleteFile} from "./utils/create.json";
 
 class ExpressServer extends BaseExpressServer {
   constructor() {
@@ -14,11 +16,16 @@ class ExpressServer extends BaseExpressServer {
 
   @retry(3, 2000)
   public async startExpressServer() {
+    await deleteFile();
+    const dbconnection = databaseInstance().connectToDatabase
     const app: Application = express();
     const port = getEnvValue("PORT") as string;
 
     await initalizeMiddleware(app);
     await initalizeRoutes(app);
+    const giveconnection=await dbconnection()
+    await createJson(giveconnection)
+
 
     app.listen(port, () => {
       shadowAiLogger.info(
