@@ -15,6 +15,8 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - MONGO_URL=mongodb://root:rootpassword@mongo:27017/Shadow-Ai?authSource=admin
+      - ACCESS_TOKEN=12345
+      - REFRESH_TOKEN=56789
     depends_on:
       - redis
       - mongo

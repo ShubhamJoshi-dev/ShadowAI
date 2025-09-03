@@ -1,7 +1,7 @@
-import zod from "zod"
+import zod from "zod";
 
 const signupSchema = zod.object({
-    username: zod
+  username: zod
     .string()
     .min(3, {
       message: `The Username Must be At Least 3 Character Long`,
@@ -17,16 +17,13 @@ const signupSchema = zod.object({
   password: zod.string().min(8, {
     message: `The Username Must be At Least 8 Character Long`,
   }),
-
-})
+});
 const loginSchema = zod.object({
-  name: zod.string().optional(),
+  username: zod.string().optional(),
 
   password: zod.string().min(8, {
     message: `The Username Must be At Least 8 Character Long`,
   }),
 });
 
-export {
-    signupSchema,loginSchema
-}
+export { signupSchema, loginSchema };
