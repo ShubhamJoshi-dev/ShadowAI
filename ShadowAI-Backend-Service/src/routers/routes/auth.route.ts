@@ -1,23 +1,17 @@
 import { Router } from "express";
 import { authRouteConfig, baseApiConfig } from "../../config/api.config";
-import { loginController, logoutController, signupController } from "../../controller/auth.controller";
+import {
+  loginController,
+  logoutController,
+  signupController,
+} from "../../controller/auth.controller";
 
+const authRouter = Router();
 
-const authRouter= Router()
+authRouter.post(authRouteConfig["signup"], signupController);
 
-authRouter.post(
-    baseApiConfig["base"].concat(authRouteConfig["signup"]),
-    signupController    
-)
+authRouter.post(authRouteConfig["login"], loginController);
 
-authRouter.post(
-    baseApiConfig["base"].concat(authRouteConfig["login"]),
-    loginController
-)
+authRouter.post(authRouteConfig["logout"], logoutController);
 
-authRouter.post(
-    baseApiConfig["base"].concat(authRouteConfig["logout"]),
-    logoutController
-)
-
-export default authRouter
+export default authRouter;

@@ -1,7 +1,6 @@
-version: '3.8'
+version: "3.8"
 
 services:
-
   shadowai-backend:
     build:
       context: ./ShadowAI-Backend-Service
@@ -15,22 +14,26 @@ services:
       - PORT=3001
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - MONGO_URL=mongodb://root:roopassword@mongo:27017/Shadow-Ai?authSource=admin
+      - MONGO_URL=mongodb://root:rootpassword@mongo:27017/Shadow-Ai?authSource=admin
     depends_on:
       - redis
       - mongo
     networks:
       - shadowai-network
     volumes:
-    
       - ./logs:/app/logs
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/api/v1/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"]
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "require('http').get('http://localhost:3001/api/v1/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-
 
   redis:
     image: redis:7-alpine
@@ -63,11 +66,20 @@ services:
     networks:
       - shadowai-network
     healthcheck:
-      test: ["CMD", "mongosh", "--username", "root", "--password", "rootpassword", "--eval", "db.adminCommand('ping')"]
+      test:
+        [
+          "CMD",
+          "mongosh",
+          "--username",
+          "root",
+          "--password",
+          "rootpassword",
+          "--eval",
+          "db.adminCommand('ping')",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
-
 
 volumes:
   redis-data:

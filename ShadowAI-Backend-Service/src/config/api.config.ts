@@ -6,8 +6,8 @@ export const healthApiConfig = {
   getHealth: "/health",
 };
 
-export const authRouteConfig={
+export const authRouteConfig = {
   signup: "/signup",
   login: "/login",
-  logout:"/logout"
-}
+  logout: "/logout",
+};

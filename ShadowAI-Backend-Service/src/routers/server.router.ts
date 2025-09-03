@@ -4,8 +4,7 @@ import healthRouter from "./routes/health.route";
 import authRouter from "./routes/auth.route";
 
 async function initalizeRoutes(app: Application) {
-  app.use(baseApiConfig["base"], [healthRouter]);
-  app.use(baseApiConfig["base"], [authRouter]);
+  app.use(baseApiConfig["base"], [healthRouter,authRouter]);
 }
 
 export default initalizeRoutes;
