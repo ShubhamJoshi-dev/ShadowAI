@@ -1,4 +1,5 @@
 import { IAPIResponse } from "../../interface/api.interface";
+import { readfromJson } from "../../utils/create.json";
 
 async function getHealthService(): Promise<IAPIResponse> {
   const healthPayload = {
@@ -7,7 +8,7 @@ async function getHealthService(): Promise<IAPIResponse> {
     timestamp: new Date().toISOString(),
     version: "1.0.0",
     checks: {
-      database: "not connected",
+      database: readfromJson("mongoConnection"),
       cache: "not connected",
       messageQueue: "not connected",
     },
