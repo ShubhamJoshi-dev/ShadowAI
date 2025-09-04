@@ -11,3 +11,7 @@ export const authRouteConfig = {
   login: "/login",
   logout: "/logout",
 };
+
+export const userRouteConfig = {
+  getUserProfile: "/user/profile",
+};
