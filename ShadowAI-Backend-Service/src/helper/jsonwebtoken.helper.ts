@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { Jwt, JwtPayload } from "jsonwebtoken";
 import { getEnvValue } from "../utils/env.utils";
 
 class JsonWebTokenHelper {
@@ -33,17 +33,19 @@ class JsonWebTokenHelper {
       }
     });
   }
-  public async verifyAccessToken(token:string){
-    return new Promise((resolve,reject)=>{
-      try{
-        const checkvalidity= jwt.verify(token,getEnvValue("ACCESS_TOKEN")as string)
-        resolve(checkvalidity)
+  public async verifyAccessToken(token: string): Promise<JwtPayload> {
+    return new Promise((resolve, reject) => {
+      try {
+        const payload = jwt.verify(
+          token,
+          getEnvValue("ACCESS_TOKEN") as string
+        );
+        resolve(payload as JwtPayload);
+      } catch (err) {
+        reject(err);
       }
-      catch(err){
-        reject(err)
-      }
-      })
-}
+    });
+  }
 }
 
 const getJsonWebTokenInstance = (): JsonWebTokenHelper => {
