@@ -5,6 +5,13 @@ class SearchOpertaion {
     });
     return result;
   }
+  public async searchtwo<T>(payload:object, model: any) {
+    const result = await model.findOne({
+      ...payload
+    });
+    return result;
+  }
+  
 }
 
 const searchInstance = () => {

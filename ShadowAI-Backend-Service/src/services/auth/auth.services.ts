@@ -10,6 +10,8 @@ import { excludeObjectKey } from "../../utils/common.utils";
 import BaseController from "../../controller/base.controller";
 import { access } from "fs";
 import { jwt } from "zod";
+import tokenModel from "../../database/entities/token.model";
+import shadowAiLogger from "../../libs/logger.libs";
 
 const baseInstance = new BaseController();
 
@@ -127,6 +129,28 @@ async function loginService(content: Required<ILogin>): Promise<IAPIResponse> {
   };
 }
 
-async function logoutService() {}
+async function logoutService(token:ILogin,payload:any,xcorrelationid:string) {
+  const createquery = createInstance();
+  const tokenfromcontroller =token 
+  const {userId,username}=payload
+  const correlationid= xcorrelationid
+
+  if (!userId) {
+    throw new DatabaseException(
+      StatusCodes.BAD_REQUEST,
+      `The username doesnt belong in the system`
+    );
+  }
+  const tokenpayload=Object.preventExtensions({
+    token:tokenfromcontroller,
+    x_correlation_id:correlationid,
+    user_id:userId
+  })
+  const savetotokenmodel= await createquery.create(tokenpayload,tokenModel)
+  return{
+    message:`The user ${username} is succesfully logged out`,
+    data: savetotokenmodel
+  }
+}
 
 export { signupService, loginService, logoutService };
