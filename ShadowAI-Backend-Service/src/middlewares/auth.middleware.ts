@@ -6,6 +6,8 @@ import shadowAiLogger from "../libs/logger.libs";
 import { checkAndAssign } from "../utils/common.utils";
 import { de } from "zod/v4/locales/index.cjs";
 import { JwtPayload } from "jsonwebtoken";
+import searchInstance from "../database/operations/select";
+import tokenModel from "../database/entities/token.model";
 
 declare global {
   namespace Express {
@@ -23,8 +25,9 @@ async function verifyAuthToken(
 ) {
   try {
     const jwtinstance = getJsonWebTokenInstance();
+    const searchquery= searchInstance()
     let token = req.headers["authorization"] ?? req.headers.authorization;
-
+    
     if (!token) {
       throw new UnauthorizedException(
         StatusCodes.UNAUTHORIZED,
@@ -36,7 +39,7 @@ async function verifyAuthToken(
     if (hasBearer) {
       token = token.split(" ")[1] as string;
     }
-
+    
     const decodepayload = await jwtinstance.verifyAccessToken(token);
 
     const checkEmpty = Object.entries(decodepayload).length > 0;
@@ -52,6 +55,17 @@ async function verifyAuthToken(
         `No x-corelation-id present on headers`
       );
     }
+    const payloadtocheck= Object.seal({
+        token:token,
+        user_id:decodepayload.userId,
+        x_correlation_id:correlationId
+        
+    })
+    const searchtoken=await searchquery.searchtwo(payloadtocheck,tokenModel)
+    shadowAiLogger.info(searchtoken)
+    if (searchtoken) {
+      throw new ValidationException(StatusCodes.BAD_REQUEST, `You are logged out`);
+    }
     checkAndAssign(req, [
       {
         key: "correlationId",
@@ -66,6 +80,7 @@ async function verifyAuthToken(
         value: decodepayload as any,
       },
     ]);
+    
 
     next();
   } catch (err) {
