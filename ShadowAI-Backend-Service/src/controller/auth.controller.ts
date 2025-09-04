@@ -1,10 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { ILogin, ISignup } from "../interface/auth.interface";
 import { loginSchema, signupSchema } from "../validation/auth.validation";
-import {
-  signupService,
-  loginService,
-} from "../services/health/auth/auth.services";
+import { signupService, loginService } from "../services/auth/auth.services";
 import getAPIHelperInstance from "../helper/api.helper";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";

@@ -1,13 +1,13 @@
 import { StatusCodes } from "http-status-codes";
-import { DatabaseException } from "../../../exceptions";
-import { ILogin, ISignup } from "../../../interface/auth.interface";
-import { IAPIResponse } from "../../../interface/api.interface";
-import searchInstance from "../../../database/operations/select";
-import userModel from "../../../database/entities/user.model";
-import cryptohelper from "../../../helper/crypto.helper";
-import createInstance from "../../../database/operations/create";
-import { excludeObjectKey } from "../../../utils/common.utils";
-import BaseController from "../../../controller/base.controller";
+import { DatabaseException } from "../../exceptions";
+import { ILogin, ISignup } from "../../interface/auth.interface";
+import { IAPIResponse } from "../../interface/api.interface";
+import searchInstance from "../../database/operations/select";
+import userModel from "../../database/entities/user.model";
+import cryptohelper from "../../helper/crypto.helper";
+import createInstance from "../../database/operations/create";
+import { excludeObjectKey } from "../../utils/common.utils";
+import BaseController from "../../controller/base.controller";
 import { access } from "fs";
 import { jwt } from "zod";
 
