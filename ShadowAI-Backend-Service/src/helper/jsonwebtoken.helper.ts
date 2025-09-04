@@ -33,10 +33,21 @@ class JsonWebTokenHelper {
       }
     });
   }
+  public async verifyAccessToken(token:string){
+    return new Promise((resolve,reject)=>{
+      try{
+        const checkvalidity= jwt.verify(token,getEnvValue("ACCESS_TOKEN")as string)
+        resolve(checkvalidity)
+      }
+      catch(err){
+        reject(err)
+      }
+      })
+}
 }
 
 const getJsonWebTokenInstance = (): JsonWebTokenHelper => {
   return new JsonWebTokenHelper();
 };
 
-export default getJsonWebTokenInstance
+export default getJsonWebTokenInstance;
