@@ -1,5 +1,5 @@
 import { StatusCodes } from "http-status-codes";
-import { DatabaseException } from "../../exceptions";
+import { BadRequestException, DatabaseException } from "../../exceptions";
 import { ILogin, ISignup } from "../../interface/auth.interface";
 import { IAPIResponse } from "../../interface/api.interface";
 import searchInstance from "../../database/operations/select";
@@ -12,6 +12,7 @@ import { access } from "fs";
 import { jwt } from "zod";
 import shadowAiLogger from "../../libs/logger.libs";
 import userProfileModel from "../../database/entities/userProfile.model";
+import tokenModel from "../../database/entities/token.model";
 
 const baseInstance = new BaseController();
 
@@ -151,6 +152,53 @@ async function loginService(content: Required<ILogin>): Promise<IAPIResponse> {
   };
 }
 
-async function logoutService() {}
+async function logoutService(
+  accessToken: string,
+  userId: string,
+  correlationid: string
+): Promise<IAPIResponse> {
+  const createModel = createInstance();
+  const searchModel = searchInstance();
+
+  const andQuery = {
+    $and: [
+      {
+        accessToken: accessToken,
+      },
+      {
+        userId: userId,
+      },
+    ],
+  } as Record<string, any>;
+
+  const searchResult = await searchModel.searchAnd(andQuery, tokenModel);
+
+  if (Array.isArray(searchResult) && searchResult.length > 0) {
+    throw new BadRequestException(
+      StatusCodes.BAD_REQUEST,
+      `The User Has Already been Logged Out, Please Refresh the Page to Clarify It`
+    );
+  }
+
+  const tokenpayload = Object.preventExtensions({
+    accessToken: accessToken,
+    x_correlation_id: correlationid,
+    userId: userId,
+    logoutAt: new Date(),
+  });
+
+  const savetotokenmodel = await createModel.create(tokenpayload, tokenModel);
+
+  if (!savetotokenmodel) {
+    throw new DatabaseException(
+      StatusCodes.CONFLICT,
+      `Database Error Unable to Create the Token Payload`
+    );
+  }
+  return {
+    message: `The userId ${userId} is succesfully logged out`,
+    data: excludeObjectKey(tokenpayload, ["accessToken"]),
+  };
+}
 
 export { signupService, loginService, logoutService };

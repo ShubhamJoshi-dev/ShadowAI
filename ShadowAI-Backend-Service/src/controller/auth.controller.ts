@@ -1,13 +1,19 @@
 import { NextFunction, Request, Response } from "express";
 import { ILogin, ISignup } from "../interface/auth.interface";
 import { loginSchema, signupSchema } from "../validation/auth.validation";
-import { signupService, loginService } from "../services/auth/auth.services";
+import {
+  signupService,
+  loginService,
+  logoutService,
+} from "../services/auth/auth.services";
 import getAPIHelperInstance from "../helper/api.helper";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
 import { ZodError, ZodRealError } from "zod";
 import mapZodError from "../mapper/zod.mapper";
 import HttpStatusCode from "http-status-codes";
+import { HttpExceptions } from "../exceptions";
+import { da, ur } from "zod/v4/locales/index.cjs";
 
 async function signupController(
   req: Request,
@@ -26,7 +32,7 @@ async function signupController(
     apiInstance.sendSuccessResponse(res, message, data, url);
   } catch (err: UnknownAny) {
     shadowAiLogger.error(`Error in the Signup Controller ${err}`);
-    if (err instanceof ZodError || err instanceof ZodRealError) {
+    if (err instanceof ZodError || !(err instanceof HttpExceptions)) {
       const mappedError = mapZodError(err.issues);
       apiInstance.sendErrorResponse(
         res,
@@ -52,7 +58,7 @@ async function loginController(
     apiInstance.sendSuccessResponse(res, message, data, url);
   } catch (err) {
     shadowAiLogger.error(`Error in the Login Controller ${err}`);
-    if (err instanceof ZodError || err instanceof ZodRealError) {
+    if (err instanceof ZodError && !(err instanceof HttpExceptions)) {
       const mappedError = mapZodError(err.issues);
       apiInstance.sendErrorResponse(
         res,
@@ -71,8 +77,18 @@ async function logoutController(
 ) {
   try {
     const apiInstance = getAPIHelperInstance();
+
     const url = req.originalUrl;
-    console.log(req.user);
+
+    const token = req.token;
+
+    const xCorrelationId = req.correlationId;
+
+    const userId = req.user.userId;
+
+    const apiPayload = await logoutService(token, userId, xCorrelationId);
+    const { data, message } = apiPayload;
+    apiInstance.sendSuccessResponse(res, url, data, message);
   } catch (err) {
     shadowAiLogger.error(`Error in the Logout Controller, Due To : ${err}`);
     next(err);

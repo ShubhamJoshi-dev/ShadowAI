@@ -23,6 +23,10 @@ class SearchOpertaion {
       .populate(modelPopulate);
     return result;
   }
+
+  public async searchAnd(payload: Record<string, string>, model: any) {
+    return model.find(payload);
+  }
 }
 
 const searchInstance = () => {

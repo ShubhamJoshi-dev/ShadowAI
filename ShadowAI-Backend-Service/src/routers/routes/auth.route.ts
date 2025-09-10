@@ -5,6 +5,7 @@ import {
   logoutController,
   signupController,
 } from "../../controller/auth.controller";
+import { verifyAuthToken } from "../../middlewares/auth.middleware";
 
 const authRouter = Router();
 
@@ -12,6 +13,6 @@ authRouter.post(authRouteConfig["signup"], signupController);
 
 authRouter.post(authRouteConfig["login"], loginController);
 
-authRouter.post(authRouteConfig["logout"], logoutController);
+authRouter.post(authRouteConfig["logout"], verifyAuthToken, logoutController);
 
 export default authRouter;
