@@ -44,6 +44,20 @@ async function loginController(
     next(err);
   }
 }
-async function logoutController() {}
+
+async function logoutController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const url = req.originalUrl;
+    console.log(req.user);
+  } catch (err) {
+    shadowAiLogger.error(`Error in the Logout Controller, Due To : ${err}`);
+    next(err);
+  }
+}
 
 export { signupController, loginController, logoutController };
