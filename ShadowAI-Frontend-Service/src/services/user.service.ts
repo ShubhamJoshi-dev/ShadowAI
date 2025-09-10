@@ -1,5 +1,6 @@
 import { ApiService } from './api'
 import { UserProfile, ApiResponse } from '@/types'
+import { generateUUID } from './auth.service'
 
 export class UserService {
   /**
@@ -7,7 +8,13 @@ export class UserService {
    */
   static async getProfile(): Promise<ApiResponse<UserProfile>> {
     try {
-      const response = await ApiService.get<UserProfile>('/user/profile')
+      const correlationId = generateUUID()
+      const response = await ApiService.get<UserProfile>('/user/profile', {
+        headers: {
+          'x-correlation-id': correlationId
+        }
+      })
+      console.log('User profile fetch correlation ID:', correlationId)
       return response
     } catch (error) {
       throw error
@@ -19,7 +26,13 @@ export class UserService {
    */
   static async updateProfile(userData: Partial<UserProfile>): Promise<ApiResponse<UserProfile>> {
     try {
-      const response = await ApiService.put<UserProfile>('/user/profile', userData)
+      const correlationId = generateUUID()
+      const response = await ApiService.put<UserProfile>('/user/profile', userData, {
+        headers: {
+          'x-correlation-id': correlationId
+        }
+      })
+      console.log('User profile update correlation ID:', correlationId)
       return response
     } catch (error) {
       throw error
@@ -31,7 +44,13 @@ export class UserService {
    */
   static async deleteAccount(): Promise<ApiResponse<void>> {
     try {
-      const response = await ApiService.delete<void>('/user/profile')
+      const correlationId = generateUUID()
+      const response = await ApiService.delete<void>('/user/profile', {
+        headers: {
+          'x-correlation-id': correlationId
+        }
+      })
+      console.log('User profile delete correlation ID:', correlationId)
       return response
     } catch (error) {
       throw error
@@ -46,11 +65,18 @@ export class UserService {
     newPassword: string
   }): Promise<ApiResponse<void>> {
     try {
-      const response = await ApiService.put<void>('/user/password', data)
+      const correlationId = generateUUID()
+      const response = await ApiService.put<void>('/user/password', data, {
+        headers: {
+          'x-correlation-id': correlationId
+        }
+      })
+      console.log('Password change correlation ID:', correlationId)
       return response
     } catch (error) {
       throw error
     }
   }
 }
+
 

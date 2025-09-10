@@ -21,7 +21,7 @@ import { useTheme } from 'next-themes'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { AuthService } from '@/services/auth.service'
+import { AuthService, generateUUID } from '@/services/auth.service'
 import { User as UserType } from '@/types'
 import { getInitials } from '@/lib/utils'
 
@@ -44,6 +44,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   useEffect(() => {
     const checkAuth = async () => {
+      // Add a small delay to ensure localStorage is updated after login
+      await new Promise(resolve => setTimeout(resolve, 100))
+      
       const isAuthenticated = AuthService.isAuthenticated()
       const currentUser = AuthService.getCurrentUser()
       
@@ -56,18 +59,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         setUser(currentUser)
       } else {
         try {
+          const correlationId = generateUUID()
           const response = await fetch('/api/user/profile', {
             headers: {
-              'Authorization': `Bearer ${AuthService.getAccessToken()}`
+              'Authorization': `Bearer ${AuthService.getAccessToken()}`,
+              'x-correlation-id': correlationId
             }
           })
+          console.log('Dashboard layout user fetch correlation ID:', correlationId)
           
           if (response.ok) {
             const data = await response.json()
             if (!data.error && data.data) {
               setUser(data.data)
               AuthService.updateUserData(data.data)
+            } else {
+              // If we can't get user profile but have token, clear auth
+              AuthService.clearAuth()
+              router.push('/auth/login')
             }
+          } else {
+            // If API call fails, clear auth and redirect
+            AuthService.clearAuth()
+            router.push('/auth/login')
           }
         } catch (error) {
           console.error('Failed to fetch user profile:', error)
@@ -109,7 +123,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
+      {/* Mobile overlay */}
       <AnimatePresence>
         {sidebarOpen && (
           <motion.div
@@ -122,22 +137,24 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         )}
       </AnimatePresence>
 
+      {/* Sidebar */}
       <aside className={`
         fixed top-0 left-0 z-50 h-full w-64 transform transition-transform duration-300 ease-in-out
-        lg:translate-x-0 lg:static lg:z-0
-        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+        lg:relative lg:translate-x-0 lg:z-0
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700
       `}>
-        <div className="h-full glass-effect bg-white/90 dark:bg-slate-900/90 border-r border-gray-200 dark:border-slate-700">
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-slate-700">
+        <div className="h-full flex flex-col">
+          {/* Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
             <div className="flex items-center space-x-3">
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-shadow rounded-lg blur-md opacity-50"></div>
-                <div className="relative bg-gradient-shadow p-2 rounded-lg">
-                  <Bot className="w-6 h-6 text-white" />
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Bot className="w-5 h-5 text-white" />
                 </div>
               </div>
               <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-                <span className="text-gradient-shadow">Shadow</span>AI
+                <span className="text-blue-600 dark:text-blue-400">Shadow</span>AI
               </h1>
             </div>
             <Button
@@ -150,31 +167,30 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Button>
           </div>
 
-          <nav className="p-4 space-y-2">
-            {sidebarItems.map((item, index) => (
-              <motion.a
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            {sidebarItems.map((item) => (
+              <a
                 key={item.href}
                 href={item.href}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
                 className={`
-                  flex items-center space-x-3 px-4 py-3 rounded-lg transition-all duration-200
+                  flex items-center space-x-3 px-3 py-2 rounded-lg transition-all duration-200
                   ${item.active 
-                    ? 'bg-gradient-shadow text-white shadow-glow' 
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-800'
+                    ? 'bg-blue-600 text-white shadow-sm' 
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
                   }
                 `}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
-              </motion.a>
+              </a>
             ))}
           </nav>
 
-          <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-gray-200 dark:border-slate-700">
-            <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-slate-800">
-              <div className="w-10 h-10 bg-gradient-shadow rounded-full flex items-center justify-center text-white font-semibold">
+          {/* User section */}
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-700">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
                 {getInitials(user.username)}
               </div>
               <div className="flex-1 min-w-0">
@@ -190,8 +206,10 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         </div>
       </aside>
 
-      <div className="lg:ml-64">
-        <header className="glass-effect bg-white/90 dark:bg-slate-900/90 border-b border-gray-200 dark:border-slate-700 px-6 py-4">
+      {/* Main content area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Header */}
+        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Button
@@ -207,7 +225,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
                 <Input
                   placeholder="Search..."
-                  className="pl-10 w-64 bg-gray-50 dark:bg-slate-800 border-gray-200 dark:border-slate-700"
+                  className="pl-10 w-64 bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600"
                 />
               </div>
             </div>
@@ -245,14 +263,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </header>
 
-        <main className="p-6">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            {children}
-          </motion.div>
+        {/* Main content */}
+        <main className="flex-1 p-4 lg:p-6 bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-7xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              {children}
+            </motion.div>
+          </div>
         </main>
       </div>
     </div>

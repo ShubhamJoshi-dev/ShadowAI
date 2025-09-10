@@ -1,186 +1,226 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { motion } from 'framer-motion'
-import { 
-  User as UserIcon, 
-  Mail, 
-  Calendar, 
-  Edit3, 
-  Save, 
+import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
+import {
+  User as UserIcon,
+  Mail,
+  Calendar,
+  Edit3,
+  Save,
   X,
   Shield,
   Key,
-  Trash2
-} from 'lucide-react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Badge } from '@/components/ui/badge'
-import { useToast } from '@/hooks/use-toast'
-import { AuthService } from '@/services/auth.service'
-import { UserService } from '@/services/user.service'
-import { User, UserProfile } from '@/types'
-import { getInitials, formatDate, getErrorMessage } from '@/lib/utils'
+  Trash2,
+} from "lucide-react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { LoadingSpinner, LoadingDots } from "@/components/ui/loading-spinner";
+import { ProgressNotificationContainer } from "@/components/ui/progress-notification";
+import { useProgressNotifications } from "@/hooks/use-progress-notifications";
+import { useToast } from "@/hooks/use-toast";
+import { AuthService } from "@/services/auth.service";
+import { UserService } from "@/services/user.service";
+import { User, UserProfile } from "@/types";
+import { getInitials, formatDate, getErrorMessage } from "@/lib/utils";
 
 export default function ProfilePage() {
-  const { toast } = useToast()
-  const [user, setUser] = useState<User | null>(null)
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [isEditing, setIsEditing] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+  const { toast } = useToast();
+  const [user, setUser] = useState<User | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [editForm, setEditForm] = useState({
-    username: '',
-    email: '',
-  })
+    username: "",
+    email: "",
+  });
+
+  const {
+    notifications,
+    removeNotification,
+    showLoading,
+    showSuccess,
+    showError,
+    updateNotification
+  } = useProgressNotifications();
 
   useEffect(() => {
-    const currentUser = AuthService.getCurrentUser()
+    const currentUser = AuthService.getCurrentUser();
     if (currentUser) {
-      setUser(currentUser)
-      setProfile(currentUser)
+      setUser(currentUser);
+      setProfile(currentUser);
       setEditForm({
         username: currentUser.username,
         email: currentUser.email,
-      })
+      });
     }
-    
+
     // Load fresh profile data
-    loadProfile()
-  }, [])
+    loadProfile();
+  }, []);
 
   const loadProfile = async () => {
+    const loadingId = showLoading('Loading Profile', 'Fetching your profile information...');
+    setIsLoadingProfile(true);
+    
     try {
-      const response = await UserService.getProfile()
+      // Simulate progress
+      updateNotification(loadingId, { progress: 30 });
+      
+      const response: any = await UserService.getProfile();
+      console.log("This is response", response);
+      
+      updateNotification(loadingId, { progress: 80 });
+      
       if (!response.error && response.data) {
-        setProfile(response.data)
-        setUser(response.data)
+        setProfile(response.data);
+        setUser(response.data);
         setEditForm({
           username: response.data.username,
           email: response.data.email,
-        })
+        });
+        
+        updateNotification(loadingId, { progress: 100 });
+        showSuccess('Profile Loaded', 'Your profile information is ready');
+      } else {
+        showError('Load Failed', 'Unable to load profile information');
       }
+      
+      removeNotification(loadingId);
     } catch (error) {
-      console.error('Failed to load profile:', error)
+      console.error("Failed to load profile:", error);
+      showError('Load Failed', 'Failed to load profile information');
+      removeNotification(loadingId);
+    } finally {
+      setIsLoadingProfile(false);
     }
-  }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setEditForm(prev => ({
+    const { name, value } = e.target;
+    setEditForm((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const handleSave = async () => {
     if (!editForm.username.trim() || !editForm.email.trim()) {
-      toast({
-        title: "Validation Error",
-        description: "Please fill in all fields",
-        variant: "destructive",
-      })
-      return
+      showError("Validation Error", "Please fill in all fields");
+      return;
     }
 
-    setIsLoading(true)
+    const loadingId = showLoading('Updating Profile', 'Saving your changes...');
+    setIsLoading(true);
+    
     try {
-      const response = await UserService.updateProfile(editForm)
+      // Simulate progress
+      updateNotification(loadingId, { progress: 25 });
       
+      const response: any = await UserService.updateProfile(editForm);
+      
+      updateNotification(loadingId, { progress: 75 });
+
       if (!response.error && response.data) {
-        setProfile(response.data)
-        setUser(response.data)
-        AuthService.updateUserData(response.data)
-        setIsEditing(false)
+        setProfile(response.data);
+        setUser(response.data);
+        AuthService.updateUserData(response.data);
+        setIsEditing(false);
         
-        toast({
-          title: "Profile Updated",
-          description: "Your profile has been successfully updated.",
-          variant: "success",
-        })
+        updateNotification(loadingId, { progress: 100 });
+        showSuccess("Profile Updated", "Your profile has been successfully updated.");
+      } else {
+        showError("Update Failed", response.message || "Failed to update profile");
       }
+      
+      removeNotification(loadingId);
     } catch (error) {
-      toast({
-        title: "Update Failed",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      })
+      showError("Update Failed", getErrorMessage(error));
+      removeNotification(loadingId);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleCancel = () => {
     if (profile) {
       setEditForm({
         username: profile.username,
         email: profile.email,
-      })
+      });
     }
-    setIsEditing(false)
-  }
+    setIsEditing(false);
+  };
 
   const getAccountTypeBadge = (type: string) => {
-    return type === 'OAuth' ? (
-      <Badge variant="outline" className="border-blue-500 text-blue-600 dark:text-blue-400">
+    return type === "OAuth" ? (
+      <Badge
+        variant="outline"
+        className="border-blue-500 text-blue-600 dark:text-blue-400"
+      >
         OAuth
       </Badge>
     ) : (
-      <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-400">
+      <Badge
+        variant="outline"
+        className="border-green-500 text-green-600 dark:text-green-400"
+      >
         JWT
       </Badge>
-    )
-  }
+    );
+  };
 
-  if (!user || !profile) {
+  if (isLoadingProfile || !user || !profile) {
     return (
       <div className="flex items-center justify-center py-24">
-        <div className="loading-dots text-shadowai-500">
-          <div></div>
-          <div></div>
-          <div></div>
-          <div></div>
+        <div className="text-center space-y-4">
+          <LoadingSpinner size="lg" className="text-blue-600" />
+          <div className="space-y-2">
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white">Loading Profile</h3>
+            <p className="text-gray-600 dark:text-gray-300">Fetching your account information...</p>
+          </div>
+          <LoadingDots className="text-blue-600" />
         </div>
       </div>
-    )
+    );
   }
 
   return (
-    <div className="space-y-8">
+    <>
+      <ProgressNotificationContainer 
+        notifications={notifications}
+        onClose={removeNotification}
+      />
+      <div className="space-y-6">
       {/* Header */}
       <div className="space-y-2">
-        <motion.h1 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="text-3xl font-bold text-gray-900 dark:text-white"
-        >
+        <h1 className="text-2xl lg:text-3xl font-bold text-gray-900 dark:text-white">
           Profile Settings
-        </motion.h1>
-        <motion.p 
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.1 }}
-          className="text-gray-600 dark:text-gray-300"
-        >
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">
           Manage your account information and preferences.
-        </motion.p>
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Profile Card */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-          className="lg:col-span-1"
-        >
+        <div className="lg:col-span-1">
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col items-center space-y-4">
                 {/* Avatar */}
                 <div className="relative">
-                  <div className="w-24 h-24 bg-gradient-shadow rounded-full flex items-center justify-center text-white text-2xl font-bold">
+                  <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
                     {getInitials(user.username)}
                   </div>
                   <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
@@ -231,15 +271,10 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
 
         {/* Profile Details */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="lg:col-span-2 space-y-6"
-        >
+        <div className="lg:col-span-2 space-y-6">
           {/* Basic Information */}
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
@@ -265,10 +300,10 @@ export default function ProfilePage() {
                       size="sm"
                       onClick={handleSave}
                       disabled={isLoading}
-                      className="bg-gradient-shadow hover:shadow-glow"
+                      className="bg-blue-600 hover:bg-blue-700"
                     >
                       {isLoading ? (
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                        <LoadingSpinner size="sm" className="mr-2" />
                       ) : (
                         <Save className="w-4 h-4 mr-2" />
                       )}
@@ -291,7 +326,10 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Username */}
                 <div className="space-y-2">
-                  <Label htmlFor="username" className="flex items-center space-x-2">
+                  <Label
+                    htmlFor="username"
+                    className="flex items-center space-x-2"
+                  >
                     <UserIcon className="w-4 h-4" />
                     <span>Username</span>
                   </Label>
@@ -302,10 +340,10 @@ export default function ProfilePage() {
                       value={editForm.username}
                       onChange={handleInputChange}
                       disabled={isLoading}
-                      className="glass-effect"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                     />
                   ) : (
-                    <div className="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-md">
+                    <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-md">
                       {profile.username}
                     </div>
                   )}
@@ -313,7 +351,10 @@ export default function ProfilePage() {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="flex items-center space-x-2">
+                  <Label
+                    htmlFor="email"
+                    className="flex items-center space-x-2"
+                  >
                     <Mail className="w-4 h-4" />
                     <span>Email Address</span>
                   </Label>
@@ -325,10 +366,10 @@ export default function ProfilePage() {
                       value={editForm.email}
                       onChange={handleInputChange}
                       disabled={isLoading}
-                      className="glass-effect"
+                      className="bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600"
                     />
                   ) : (
-                    <div className="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-md">
+                    <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-md">
                       {profile.email}
                     </div>
                   )}
@@ -342,8 +383,10 @@ export default function ProfilePage() {
                     <Calendar className="w-4 h-4" />
                     <span>Member Since</span>
                   </Label>
-                  <div className="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-md">
-                    {profile.createdAt ? formatDate(profile.createdAt) : 'Recently joined'}
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-md">
+                    {profile.createdAt
+                      ? formatDate(profile.createdAt)
+                      : "Recently joined"}
                   </div>
                 </div>
 
@@ -352,10 +395,12 @@ export default function ProfilePage() {
                     <Shield className="w-4 h-4" />
                     <span>Account Type</span>
                   </Label>
-                  <div className="px-3 py-2 bg-gray-50 dark:bg-slate-800 rounded-md flex items-center space-x-2">
+                  <div className="px-3 py-2 bg-gray-50 dark:bg-gray-800 rounded-md flex items-center space-x-2">
                     <span>{profile.type}</span>
-                    {profile.type === 'JWT' && (
-                      <Badge variant="success" className="text-xs">Verified</Badge>
+                    {profile.type === "JWT" && (
+                      <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                        Verified
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -372,7 +417,7 @@ export default function ProfilePage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-slate-800 rounded-lg">
+              <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                 <div className="flex items-center space-x-3">
                   <Key className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                   <div>
@@ -407,8 +452,9 @@ export default function ProfilePage() {
               </div>
             </CardContent>
           </Card>
-        </motion.div>
+        </div>
       </div>
-    </div>
-  )
+      </div>
+    </>
+  );
 }

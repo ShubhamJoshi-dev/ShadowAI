@@ -1,116 +1,123 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { motion } from 'framer-motion'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
-import { Eye, EyeOff, UserPlus, Mail, Lock, User } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
-import { AuthService } from '@/services/auth.service'
-import { SignupRequest } from '@/types'
-import { getErrorMessage, isValidEmail, isValidPassword } from '@/lib/utils'
+import { useState } from "react";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Eye, EyeOff, UserPlus, Mail, Lock, User } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { AuthService } from "@/services/auth.service";
+import { SignupRequest } from "@/types";
+import { getErrorMessage, isValidEmail, isValidPassword } from "@/lib/utils";
 
 export default function SignupPage() {
-  const router = useRouter()
-  const { toast } = useToast()
-  
+  const router = useRouter();
+  const { toast } = useToast();
+
   const [formData, setFormData] = useState<SignupRequest>({
-    username: '',
-    email: '',
-    password: '',
-  })
-  const [confirmPassword, setConfirmPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
+    username: "",
+    email: "",
+    password: "",
+  });
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
+    const { name, value } = e.target;
+    setFormData((prev) => ({
       ...prev,
       [name]: value,
-    }))
-  }
+    }));
+  };
 
   const validateForm = (): string | null => {
     if (!formData.username.trim()) {
-      return "Username is required"
+      return "Username is required";
     }
-    
+
     if (formData.username.trim().length < 3) {
-      return "Username must be at least 3 characters long"
+      return "Username must be at least 3 characters long";
     }
-    
+
     if (!formData.email.trim()) {
-      return "Email is required"
+      return "Email is required";
     }
-    
+
     if (!isValidEmail(formData.email)) {
-      return "Please enter a valid email address"
+      return "Please enter a valid email address";
     }
-    
+
     if (!formData.password) {
-      return "Password is required"
+      return "Password is required";
     }
-    
+
     if (formData.password.length < 8) {
-      return "Password must be at least 8 characters long"
+      return "Password must be at least 8 characters long";
     }
-    
+
     if (formData.password !== confirmPassword) {
-      return "Passwords do not match"
+      return "Passwords do not match";
     }
-    
-    return null
-  }
+
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    const validationError = validateForm()
+    e.preventDefault();
+
+    const validationError = validateForm();
     if (validationError) {
       toast({
         title: "Validation Error",
         description: validationError,
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     try {
-      const response = await AuthService.signup(formData)
-      
+      const response = await AuthService.signup(formData);
+
       if (!response.error && response.statusCode === 202) {
         toast({
           title: "Account Created!",
-          description: "Welcome to ShadowAI. You have been successfully registered.",
+          description:
+            "Welcome to ShadowAI. You have been successfully registered.",
           variant: "success",
-        })
-        
-        router.push('/dashboard')
+        });
+
+        router.push("/dashboard");
       } else {
         toast({
           title: "Registration Failed",
           description: response.message || "Unable to create account",
           variant: "destructive",
-        })
+        });
       }
     } catch (error) {
       toast({
         title: "Registration Failed",
         description: getErrorMessage(error),
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <motion.div
@@ -124,10 +131,10 @@ export default function SignupPage() {
             Create Account
           </CardTitle>
           <CardDescription className="text-slate-300">
-            Join ShadowAI and unlock the power of AI
+            Join ShadowAI and unlock the power of AI Mirroring
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent className="space-y-6">
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Username Field */}
@@ -196,7 +203,11 @@ export default function SignupPage() {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
                   disabled={isLoading}
                 >
-                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -225,7 +236,11 @@ export default function SignupPage() {
                   className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slate-400 hover:text-slate-200 transition-colors"
                   disabled={isLoading}
                 >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
                 </button>
               </div>
             </div>
@@ -265,8 +280,8 @@ export default function SignupPage() {
           {/* Sign In Link */}
           <div className="text-center">
             <Link href="/auth/login">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full glass-effect border-white/20 text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
                 disabled={isLoading}
               >
@@ -277,5 +292,5 @@ export default function SignupPage() {
         </CardContent>
       </Card>
     </motion.div>
-  )
+  );
 }

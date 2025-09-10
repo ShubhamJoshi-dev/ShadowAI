@@ -5,29 +5,52 @@ import {
   AuthResponse, 
   LoginResponse, 
   SignupResponse,
-  User
+  User,
+  UserProfile,
+  ApiResponse
 } from '@/types'
+
+
+export function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
 
 export class AuthService {
   private static readonly ACCESS_TOKEN_KEY = 'access_token'
   private static readonly REFRESH_TOKEN_KEY = 'refresh_token'
   private static readonly USER_KEY = 'user_data'
-  static async login(credentials: LoginRequest): Promise<LoginResponse> {
+  static async login(credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> {
     try {
-      const response = await ApiService.post<LoginResponse>('/login', credentials)
-      console.log('This is payload', response)
-        if (!response.error && response.data?.accessToken) {
-          this.setAccessToken(response.data.accessToken)
-          this.setRefreshToken(response.data.refreshToken)
-          
-          try {
-            const userResponse = await ApiService.get<UserProfile>('/user/profile')
-            if (!userResponse.error && userResponse.data) {
-              this.setUser(userResponse.data)
+      const response = await ApiService.post<any>('/login', credentials)
+      
+      if (response.data?.accessToken) {
+        this.setAccessToken(response.data?.accessToken)
+        this.setRefreshToken(response.data?.refreshToken)
+        
+        // Fetch user profile after successful login
+        try {
+          const correlationId = generateUUID()
+          const userResponse = await ApiService.get<UserProfile>('/user/profile', {
+            headers: {
+              'x-correlation-id': correlationId
             }
-          } catch (userError) {
-            console.warn('Failed to fetch user profile after login:', userError)
+          });
+          console.log('This is user response', userResponse)
+          console.log('Request correlation ID:', correlationId)
+          if (userResponse.data) {
+            this.setUser(userResponse.data)
+            console.log('User profile fetched and stored:', userResponse.data)
+          } else {
+            console.warn('Failed to fetch user profile:', userResponse.message)
           }
+        } catch (userError) {
+          console.warn('Failed to fetch user profile after login:', userError)
+          // Don't clear tokens here as login was successful
+        }
       }
       
       return response
@@ -36,7 +59,7 @@ export class AuthService {
     }
   }
 
-  static async signup(userData: SignupRequest): Promise<SignupResponse> {
+  static async signup(userData: SignupRequest): Promise<ApiResponse<SignupResponse>> {
     try {
       const response = await ApiService.post<SignupResponse>('/signup', userData)
       
@@ -46,7 +69,7 @@ export class AuthService {
             username: userData.username,
             password: userData.password
           })
-          return loginResponse as SignupResponse
+          return loginResponse as ApiResponse<SignupResponse>
         } catch (loginError) {
           return response
         }
@@ -58,7 +81,7 @@ export class AuthService {
     }
   }
 
-  static async logout(): Promise<AuthResponse> {
+  static async logout(): Promise<ApiResponse<AuthResponse>> {
     try {
       const response = await ApiService.post<AuthResponse>('/logout')
       this.clearAuth()
@@ -71,7 +94,10 @@ export class AuthService {
 
   static isAuthenticated(): boolean {
     if (typeof window === 'undefined') return false
-    return !!this.getAccessToken()
+    const token = this.getAccessToken()
+    const user = this.getCurrentUser()
+    // Check both token and user data exist for proper authentication
+    return !!(token && user)
   }
 
   static getCurrentUser(): User | null {

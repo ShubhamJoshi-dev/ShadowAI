@@ -8,3 +8,4 @@ export default function DashboardLayoutWrapper({ children }: DashboardLayoutWrap
   return <DashboardLayout>{children}</DashboardLayout>
 }
 
+
