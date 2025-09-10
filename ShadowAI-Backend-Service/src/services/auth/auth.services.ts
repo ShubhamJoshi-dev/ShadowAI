@@ -10,6 +10,8 @@ import { excludeObjectKey } from "../../utils/common.utils";
 import BaseController from "../../controller/base.controller";
 import { access } from "fs";
 import { jwt } from "zod";
+import shadowAiLogger from "../../libs/logger.libs";
+import userProfileModel from "../../database/entities/userProfile.model";
 
 const baseInstance = new BaseController();
 
@@ -53,6 +55,28 @@ async function signupService(payload: Partial<ISignup>): Promise<IAPIResponse> {
   };
 
   const savetoDatabase = await createquery.create(dbPayload, userModel);
+
+  shadowAiLogger.info(
+    `Starting to save the User Profile for the Newly Create User`
+  );
+
+  const createUserId = savetoDatabase._id.toString("utf-8");
+
+  const userProfilePayload = Object.preventExtensions({
+    userProfileName: username as string,
+    primaryEmail: email as string,
+    userId: createUserId,
+  } as Record<string, string>);
+
+  const saveUserProfileDatabase = await createquery.create(
+    userProfilePayload,
+    userProfileModel
+  );
+
+  shadowAiLogger.info(
+    `The UserProfile Has been Created on the Database For the Newly Crreated User `
+  );
+
   return {
     message: "Signup completed",
     data: excludeObjectKey(savetoDatabase._doc, [

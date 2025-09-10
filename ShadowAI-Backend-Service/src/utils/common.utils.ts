@@ -26,4 +26,8 @@ const checkAndAssign = <T>(
   shadowAiLogger.info(`Process Check And Assign Completed For the object`);
 };
 
-export { excludeObjectKey, checkAndAssign };
+const isMissingAttributeLog = (key: string): `${string} is Missing` => {
+  return `${key} is Missing`;
+};
+
+export { excludeObjectKey, checkAndAssign, isMissingAttributeLog };
