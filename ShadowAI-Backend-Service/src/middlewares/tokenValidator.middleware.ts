@@ -3,7 +3,6 @@ import { UnknownAny } from "../types/types";
 import { BadRequestException, DatabaseException } from "../exceptions";
 import StatusCode from "http-status-codes";
 import searchInstance from "../database/operations/select";
-import { token } from "morgan";
 import tokenModel from "../database/entities/token.model";
 import shadowAiLogger from "../libs/logger.libs";
 
@@ -14,14 +13,7 @@ async function validateRepeatedToken(
 ) {
   try {
     const searchModel = searchInstance();
-    const xCorrelationId = req.user["correlationId"];
-
-    if (!xCorrelationId) {
-      throw new BadRequestException(
-        StatusCode.BAD_REQUEST,
-        `The x-correlation-id is missing on the request headers`
-      );
-    }
+    const token = req.headers['authorization'];
 
     const isTokenAvailable = await searchModel.search(
       "accessToken",
