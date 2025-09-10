@@ -3,6 +3,7 @@ import { Response } from "express";
 import shadowAiLogger from "../libs/logger.libs";
 import { da } from "zod/v4/locales/index.cjs";
 import { excludeObjectKey } from "../utils/common.utils";
+import { stat } from "fs";
 
 class APIHelper {
   public async sendSuccessResponse<T>(
@@ -31,6 +32,18 @@ class APIHelper {
         error: false,
       });
     }
+  }
+
+  public async sendErrorResponse(
+    res: Response,
+    errorPayload: Record<string, any>,
+    statusCode: number
+  ) {
+    return res.status(statusCode).json({
+      statusCode: statusCode,
+      error: true,
+      message: errorPayload,
+    });
   }
 }
 

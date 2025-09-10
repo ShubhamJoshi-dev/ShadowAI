@@ -5,14 +5,17 @@ import { signupService, loginService } from "../services/auth/auth.services";
 import getAPIHelperInstance from "../helper/api.helper";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
+import { ZodError, ZodRealError } from "zod";
+import mapZodError from "../mapper/zod.mapper";
+import HttpStatusCode from "http-status-codes";
 
 async function signupController(
   req: Request,
   res: Response,
   next: NextFunction
 ) {
+  const apiInstance = getAPIHelperInstance();
   try {
-    const apiInstance = getAPIHelperInstance();
     const url = req.originalUrl;
     const content = req.body as Partial<ISignup>;
     const validcontent = await signupSchema.parseAsync(
@@ -23,6 +26,14 @@ async function signupController(
     apiInstance.sendSuccessResponse(res, message, data, url);
   } catch (err: UnknownAny) {
     shadowAiLogger.error(`Error in the Signup Controller ${err}`);
+    if (err instanceof ZodError || err instanceof ZodRealError) {
+      const mappedError = mapZodError(err.issues);
+      apiInstance.sendErrorResponse(
+        res,
+        mappedError,
+        HttpStatusCode.BAD_REQUEST
+      );
+    }
     next(err);
   }
 }
@@ -31,8 +42,8 @@ async function loginController(
   res: Response,
   next: NextFunction
 ) {
+  const apiInstance = getAPIHelperInstance();
   try {
-    const apiInstance = getAPIHelperInstance();
     const url = req.originalUrl;
     const content = req.body as Partial<ILogin>;
     const validcontent = await loginSchema.parseAsync(content);
@@ -41,6 +52,14 @@ async function loginController(
     apiInstance.sendSuccessResponse(res, message, data, url);
   } catch (err) {
     shadowAiLogger.error(`Error in the Login Controller ${err}`);
+    if (err instanceof ZodError || err instanceof ZodRealError) {
+      const mappedError = mapZodError(err.issues);
+      apiInstance.sendErrorResponse(
+        res,
+        mappedError,
+        HttpStatusCode.BAD_REQUEST
+      );
+    }
     next(err);
   }
 }

@@ -7,7 +7,9 @@ import { UnknownAny } from "./types/types";
 import { getEnvValue } from "./utils/env.utils";
 import { retry } from "./decorators/retry.decorator";
 import databaseInstance from "./database/connect";
-import {createJson, deleteFile} from "./utils/create.json";
+import flushAllRecords from "./scripts/flush.database";
+import { createJson, deleteFile } from "./utils/create.json";
+import { flushAllEnabled } from "./constant/status.constant";
 
 class ExpressServer extends BaseExpressServer {
   constructor() {
@@ -23,9 +25,10 @@ class ExpressServer extends BaseExpressServer {
 
     await initalizeMiddleware(app);
     await initalizeRoutes(app);
-    await createJson(dbconnection.connectToDatabase)
-
-
+    await createJson(dbconnection.connectToDatabase);
+    if (flushAllEnabled) {
+      await flushAllRecords();
+    }
     app.listen(port, () => {
       shadowAiLogger.info(
         `The Backend Server is Running on http://localhost:${port}/api/v1`
