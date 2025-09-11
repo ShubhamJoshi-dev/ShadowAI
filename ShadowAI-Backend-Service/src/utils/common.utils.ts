@@ -30,4 +30,9 @@ const isMissingAttributeLog = (key: string): `${string} is Missing` => {
   return `${key} is Missing`;
 };
 
-export { excludeObjectKey, checkAndAssign, isMissingAttributeLog };
+const isComparetwoString = (raw: String, db: string) => {
+    return (
+      String(raw).trim().toLowerCase() === String(db).trim().toLowerCase()
+    );
+  };
+export { excludeObjectKey, checkAndAssign, isMissingAttributeLog,isComparetwoString };

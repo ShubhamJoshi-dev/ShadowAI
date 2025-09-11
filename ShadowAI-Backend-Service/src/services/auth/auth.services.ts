@@ -1,18 +1,20 @@
 import { StatusCodes } from "http-status-codes";
 import { BadRequestException, DatabaseException } from "../../exceptions";
-import { ILogin, ISignup } from "../../interface/auth.interface";
+import { ILogin, ISignup, IUpdatePassword } from "../../interface/auth.interface";
 import { IAPIResponse } from "../../interface/api.interface";
 import searchInstance from "../../database/operations/select";
 import userModel from "../../database/entities/user.model";
 import cryptohelper from "../../helper/crypto.helper";
 import createInstance from "../../database/operations/create";
-import { excludeObjectKey } from "../../utils/common.utils";
+import { excludeObjectKey, isComparetwoString } from "../../utils/common.utils";
 import BaseController from "../../controller/base.controller";
 import { access } from "fs";
 import { jwt } from "zod";
 import shadowAiLogger from "../../libs/logger.libs";
 import userProfileModel from "../../database/entities/userProfile.model";
 import tokenModel from "../../database/entities/token.model";
+import { Http } from "winston/lib/winston/transports";
+import updateInstance from "../../database/operations/update";
 
 const baseInstance = new BaseController();
 
@@ -117,13 +119,9 @@ async function loginService(content: Required<ILogin>): Promise<IAPIResponse> {
     databaseIv
   );
 
-  const isCompareMatchPassword = (raw: string, db: string) => {
-    return (
-      String(password).trim().toLowerCase() === String(db).trim().toLowerCase()
-    );
-  };
+  
 
-  const isValidPassword = isCompareMatchPassword(password, decryptedPassword);
+  const isValidPassword = isComparetwoString(password, decryptedPassword);
 
   if (!isValidPassword) {
     throw new DatabaseException(
@@ -200,5 +198,80 @@ async function logoutService(
     data: excludeObjectKey(tokenpayload, ["accessToken"]),
   };
 }
+async function updatePasswordService(
+  username:string,
+  content:IUpdatePassword,
+  correlation_id:string
+){
+  const searchquery = searchInstance();
+  const cryptoinstance = cryptohelper();
+  const updatequery= updateInstance()
 
-export { signupService, loginService, logoutService };
+  const {currentpassword,newpassword}=content
+
+  if(currentpassword===newpassword){
+    throw new DatabaseException(
+      StatusCodes.BAD_REQUEST,
+        `The new password you entered is same as current password, Please create a new one`
+    )
+
+  }
+
+  const searchuser = await searchquery.search(
+    "username",
+    username,
+    userModel
+  );
+
+  if (!searchuser) {
+    throw new DatabaseException(
+      StatusCodes.BAD_REQUEST,
+      `The username: ${username} you provided does not  exists on system ,please signup using a username : ${username} `
+    );
+  }
+
+  const databasePassowrd = searchuser.password;
+  const databaseHex = searchuser.passHashKey;
+  const databaseIv = searchuser.passIv;
+
+  const decryptedPassword = cryptoinstance.decryptKeys(
+    databasePassowrd,
+    databaseHex,
+    databaseIv
+  );
+
+  const isValidPassword = isComparetwoString(currentpassword, decryptedPassword);
+
+   if (!isValidPassword) {
+    throw new DatabaseException(
+      StatusCodes.BAD_REQUEST,
+      `Password Does not Match For the User : ${username} `
+    );
+  }
+  const encryptedPassword= cryptoinstance.encryptKeys(newpassword)
+
+  const {text,key,iv}= encryptedPassword
+
+  const updatedPayload= Object.seal({
+    password: text,
+    passHashKey: key,
+    passIv: iv
+
+  })
+
+  const updatedpayload= await updatequery.updateandreturn('username',username,updatedPayload,userModel)
+  Object.assign(updatedpayload._doc,{
+    "x-correlation-id":correlation_id
+  })
+
+  return{
+    message:'Password Updated',
+    data: excludeObjectKey(updatedpayload._doc,[
+      "password",
+      "passHashKey",
+      "passIv",
+    ])
+}
+}
+
+export { signupService, loginService, logoutService, updatePasswordService };
