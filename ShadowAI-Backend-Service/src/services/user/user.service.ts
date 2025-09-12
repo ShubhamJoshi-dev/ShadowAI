@@ -58,7 +58,8 @@ async function getUserProfileService(userId: string): Promise<IAPIResponse> {
 async function uploadProfileService(
   username:string,
   body:string,
-  userID:string
+  userID:string,
+  correlation_id:string
 ){
   const searchQuery = searchInstance();
   const createQuery= createInstance();
@@ -84,8 +85,11 @@ async function uploadProfileService(
     imageId:imageid
   })
   const updatetouserProfile= await updatequery.updateandreturn('userId',userID,updatedPayload,userProfileModel)
+  Object.assign(savetoimageDatabase._doc,{
+    "x-correlation-id":correlation_id
+  })
   return{
-    data:savetoimageDatabase,
+    data:savetoimageDatabase._doc,
     message:'Image saved to database'
   }
 }

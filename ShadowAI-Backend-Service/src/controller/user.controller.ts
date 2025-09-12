@@ -26,11 +26,13 @@ async function uploadPostController(req: Request, res: Response, next: NextFunct
     const username =req.user.username 
     const userId= req.user.userId
     const url= req.originalUrl
+    const correlation_id= req.correlationId
     const filepath = req.file?.path
     const apiResponse = await uploadProfileService(
       username as string,
       filepath as string,
-      userId as string
+      userId as string,
+      correlation_id as string
     );
     const { data, message } = apiResponse;
     apiInstance.sendSuccessResponse(res,message, data ,url);
