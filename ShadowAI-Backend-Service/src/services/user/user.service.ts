@@ -6,6 +6,10 @@ import { IAPIResponse } from "../../interface/api.interface";
 import { excludeObjectKey } from "../../utils/common.utils";
 import userProfileModel from "../../database/entities/userProfile.model";
 import shadowAiLogger from "../../libs/logger.libs";
+import { StatusCodes } from "http-status-codes";
+import filehelperinstance from "../../utils/filestream.helper";
+import createInstance from "../../database/operations/create";
+import imageModel from "../../database/entities/image.model";
 
 async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   const searchQuery = searchInstance();
@@ -42,5 +46,31 @@ async function getUserProfileService(userId: string): Promise<IAPIResponse> {
     message: `The User Data Fetch Successfully`,
   };
 }
+async function uploadProfileService(
+  username:string,
+  body:string
+){
+  const searchQuery = searchInstance();
+  const createQuery= createInstance();
+  const filehelper= filehelperinstance();
+  const searchuser= await searchQuery.search('username',username,userModel)
+  
+  if(!searchuser){
+    throw new DatabaseException(
+      StatusCodes.BAD_REQUEST,
+       `The username: ${username} you provided does not  exists on system `
+    )
+  }
 
-export { getUserProfileService };
+  const givebaseresult= await filehelper.givebase64(body)
+  const savetoimage= Object.seal({
+    image:givebaseresult
+  })
+
+  const savetoimageDatabase= await createQuery.create(savetoimage,imageModel)
+  return{
+    data:savetoimageDatabase,
+    message:'Image saved to database'
+  }
+}
+export { getUserProfileService,uploadProfileService };

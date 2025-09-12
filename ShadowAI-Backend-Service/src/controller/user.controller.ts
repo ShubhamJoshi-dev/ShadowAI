@@ -1,8 +1,9 @@
 import { NextFunction, Request, Response } from "express";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
-import { getUserProfileService } from "../services/user/user.service";
+import { getUserProfileService, uploadProfileService } from "../services/user/user.service";
 import getAPIHelperInstance from "../helper/api.helper";
+import mapZodError from "../mapper/zod.mapper";
 
 async function getUserProfile(req: Request, res: Response, next: NextFunction) {
   try {
@@ -19,5 +20,24 @@ async function getUserProfile(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+async function uploadPostController(req: Request, res: Response, next: NextFunction) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const username =req.user.username
+    const url= req.originalUrl
+    const filepath = req.file?.path
+    const apiResponse = await uploadProfileService(
+      username as string,
+      filepath as string
+    );
+    const { data, message } = apiResponse;
+    apiInstance.sendSuccessResponse(res,message, data ,url);
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error While Uploading the Post through the Upload Post Controller`
+    );
+    next(err);
+  }
+}
 
-export default getUserProfile;
+export {getUserProfile,uploadPostController} ;
