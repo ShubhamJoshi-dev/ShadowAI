@@ -23,12 +23,14 @@ async function getUserProfile(req: Request, res: Response, next: NextFunction) {
 async function uploadPostController(req: Request, res: Response, next: NextFunction) {
   try {
     const apiInstance = getAPIHelperInstance();
-    const username =req.user.username
+    const username =req.user.username 
+    const userId= req.user.userId
     const url= req.originalUrl
     const filepath = req.file?.path
     const apiResponse = await uploadProfileService(
       username as string,
-      filepath as string
+      filepath as string,
+      userId as string
     );
     const { data, message } = apiResponse;
     apiInstance.sendSuccessResponse(res,message, data ,url);
