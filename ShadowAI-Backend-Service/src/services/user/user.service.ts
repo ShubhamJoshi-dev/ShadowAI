@@ -16,6 +16,7 @@ import { IUserProfile } from "../../interface/user.interface";
 import {
   getAccountActivateTemplate,
   getAccountDeactivateTemplate,
+  getAccountDeletedTemplate,
 } from "../../constant/mail.constant";
 import {
   IS_DEACTIVATED_CONSTANT,
@@ -392,14 +393,34 @@ async function deactivatedUserService(
         );
       }
 
+      const { html, text } = getAccountDeletedTemplate(
+        userDocument._doc.userProfileName,
+        userDocument._doc.primaryEmail,
+        userDocument._doc.userRole
+      );
+
+      const emailOptions = Object.freeze({
+        html: html,
+        to: userDocument._doc.primaryEmail,
+        text: text,
+        subject: isTrueOrFalse(value)
+          ? "Account Deleted Information"
+          : "Account Not Deleted Information",
+      } as IEmailOptions);
+
+      await smtpHelper.sendMail(emailOptions);
+      shadowAiLogger.info(
+        `Email sent to ${userDocument._doc.primaryEmail} with admin access details`
+      );
+
       return {
         data: {
           [`${userId}`]: {
-            delete: Boolean(value),
+            delete: isTrueOrFalse(value),
           },
         },
         message: `The User Has been ${
-          Boolean(value) ? "Is Deleted" : "Not Is Deleted"
+          isTrueOrFalse(value) ? "Is Deleted" : "Not Is Deleted"
         }`,
       };
     }

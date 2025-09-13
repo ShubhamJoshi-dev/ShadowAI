@@ -1,3 +1,5 @@
+import { getEnvValue } from "../utils/env.utils";
+
 export const getAccountDeactivateTemplate = (
   username: string,
   email: string,
@@ -301,6 +303,124 @@ To start using it, please activate your account:
 ${safeLink}
 
 This link will expire in 24 hours.
+-- Shadow AI
+`;
+
+  return { html, text };
+};
+
+export const getAccountDeletedTemplate = (
+  username: string,
+  email: string,
+  role: string
+): { html: string; text: string } => {
+  const esc = (s: string) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const safeUser = esc(username);
+  const safeEmail = esc(email);
+  const safeRole = esc(role);
+
+  const html = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Account Deleted</title>
+    <style>
+      body,table,td{margin:0;padding:0;font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+      a{text-decoration:none;}
+
+      .email-wrap{width:100%;background:#f9fafb;padding:30px 12px;}
+      .email-body{max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(20,30,50,0.05);}
+      .p-28{padding:28px;}
+
+      .brand{display:flex;align-items:center;gap:12px;}
+      .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#f87171,#ef4444);}
+
+      h1{font-size:20px;margin:12px 0 0 0;color:#991b1b;}
+      p{color:#374151;line-height:1.5;margin:14px 0;font-size:15px;}
+
+      .info{background:#fef2f2;border:1px solid #fee2e2;padding:12px;border-radius:8px;font-size:13px;color:#991b1b;margin:16px 0;}
+
+      .cta{display:inline-block;padding:12px 18px;border-radius:10px;background:#ef4444;color:#fff;font-weight:600;text-decoration:none;margin-top:10px;}
+
+      .footer{font-size:12px;color:#9ca3af;padding:18px;text-align:center;background:#f9fafb;border-top:1px solid #f3f4f6;}
+    </style>
+  </head>
+  <body>
+    <center class="email-wrap">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table role="presentation" class="email-body" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="p-28">
+                  <div class="brand">
+                    <div class="logo"></div>
+                    <div>
+                      <div style="font-size:14px;color:#991b1b;font-weight:700;">Shadow AI</div>
+                      <div style="font-size:12px;color:#9ca3af;">Account Deleted</div>
+                    </div>
+                  </div>
+
+                  <h1>Goodbye, ${safeUser}</h1>
+                  <p>
+                    The account associated with <strong>${safeEmail}</strong> (${safeRole}) has been permanently deleted from our system.
+                  </p>
+
+                  <div class="info">
+                    Your data has been securely removed and you will no longer have access to this account.
+                  </div>
+
+                  <p>
+                    If you deleted your account by mistake or would like to return, you are always welcome to create a new account with us.
+                  </p>
+
+                  <p style="margin-top:20px;">
+                    <a href="${getEnvValue(
+                      "FRONTEND_URL"
+                    )}/auth/signup" class="cta">Create a New Account</a>
+                  </p>
+
+                  <p style="font-size:13px;color:#6b7280;margin-top:20px;">
+                    Thank you for being part of our community. We hope to see you again in the future.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="footer">
+                  © ${new Date().getFullYear()} Shadow AI. All rights reserved.<br/>
+                  This is an automated message — please do not reply.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+  </html>
+  `;
+
+  const text = `
+Goodbye, ${safeUser}
+
+The account associated with ${safeEmail} (${safeRole}) has been permanently deleted from our system.
+
+Your data has been securely removed and you will no longer have access to this account.
+
+If you deleted your account by mistake or would like to return, you can create a new account at:
+${getEnvValue("FRONTEND_URL")}/auth/signup
+
+Thank you for being part of our community.
 -- Shadow AI
 `;
 
