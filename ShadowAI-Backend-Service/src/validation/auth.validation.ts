@@ -28,11 +28,10 @@ const loginSchema = zod.object({
 const updatePasswordSchema = zod.object({
   currentpassword: zod.string().min(8, {
     message: `The Password Must be At Least 8 Character Long`,
-  })
-,
+  }),
   newpassword: zod.string().min(8, {
     message: `The new-password Must be At Least 8 Character Long`,
   }),
 });
 
-export { signupSchema, loginSchema,updatePasswordSchema };
+export { signupSchema, loginSchema, updatePasswordSchema };

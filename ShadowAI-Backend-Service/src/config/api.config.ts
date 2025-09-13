@@ -10,10 +10,11 @@ export const authRouteConfig = {
   signup: "/signup",
   login: "/login",
   logout: "/logout",
-  updatePassword: "/updatepassword"
+  updatePassword: "/updatepassword",
 };
 
 export const userRouteConfig = {
   getUserProfile: "/user/profile",
-  uploadImage:"/user/profile/upload"
+  editUserProfile: "/user/profile/edit",
+  uploadImage: "/user/profile/upload",
 };

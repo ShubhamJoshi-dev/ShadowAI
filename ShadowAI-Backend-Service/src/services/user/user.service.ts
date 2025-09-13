@@ -12,6 +12,7 @@ import imageModel from "../../database/entities/image.model";
 import filehelperinstance from "../../helper/filestream.helper";
 import updateInstance from "../../database/operations/update";
 import cryptohelper from "../../helper/crypto.helper";
+import { IUserProfile } from "../../interface/user.interface";
 
 async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   const searchQuery = searchInstance();
@@ -122,4 +123,31 @@ async function uploadProfileService(
     message: "Image saved to database",
   };
 }
-export { getUserProfileService, uploadProfileService };
+
+async function editUserProfileService(
+  content: Partial<IUserProfile>,
+  userId: string
+): Promise<IAPIResponse> {
+  const searchQuery = searchInstance();
+  const createQuery = createInstance();
+
+  const deepCopyProfilePayload = JSON.parse(JSON.stringify(content));
+
+  const userDocs = await searchQuery.search("userId", userId, userProfileModel);
+
+  if (!userDocs) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The User is not Linked With any User Profile Model`
+    );
+  }
+
+  console.log(userDocs);
+
+  return {
+    data: "",
+    message: " ",
+  };
+}
+
+export { getUserProfileService, uploadProfileService, editUserProfileService };
