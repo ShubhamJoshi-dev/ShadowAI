@@ -1,19 +1,21 @@
-import { NextFunction, Request, Response } from "express";
+import { application, NextFunction, Request, Response } from "express";
 import { ILogin, ISignup } from "../interface/auth.interface";
-import { loginSchema, signupSchema } from "../validation/auth.validation";
+import { loginSchema, signupSchema, updatePasswordSchema } from "../validation/auth.validation";
 import {
   signupService,
   loginService,
   logoutService,
+  updatePasswordService,
 } from "../services/auth/auth.services";
 import getAPIHelperInstance from "../helper/api.helper";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
-import { ZodError, ZodRealError } from "zod";
+import { core, ZodError, ZodRealError } from "zod";
 import mapZodError from "../mapper/zod.mapper";
 import HttpStatusCode from "http-status-codes";
 import { HttpExceptions } from "../exceptions";
 import { da, ur } from "zod/v4/locales/index.cjs";
+import { constants } from "http2";
 
 async function signupController(
   req: Request,
@@ -95,4 +97,38 @@ async function logoutController(
   }
 }
 
-export { signupController, loginController, logoutController };
+async function updatePasswordController(
+  req:Request,
+  res:Response,
+  next:NextFunction
+)
+{
+  try{
+
+  const apiInstance= getAPIHelperInstance();
+
+  const url = req.originalUrl
+
+  const username=req.user.username
+
+  const body = req.body
+
+  const correlation_id= req.correlationId
+
+  const validcontent = await updatePasswordSchema.parseAsync(body);
+
+  const apiPayload= await updatePasswordService(username,validcontent,correlation_id)
+
+  const {data,message} = apiPayload;
+  apiInstance.sendSuccessResponse(res,url,data,message)
+  }
+  catch(err){
+    shadowAiLogger.info('Error in the UpdatePassword Controller')
+    next(err)
+  }
+
+
+}
+
+export { signupController, loginController, logoutController, updatePasswordController };
+

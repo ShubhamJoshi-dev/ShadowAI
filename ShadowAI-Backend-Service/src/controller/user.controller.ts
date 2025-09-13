@@ -1,8 +1,17 @@
 import { NextFunction, Request, Response } from "express";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
-import { getUserProfileService } from "../services/user/user.service";
+import {
+  editUserProfileService,
+  getUserProfileService,
+  uploadProfileService,
+} from "../services/user/user.service";
 import getAPIHelperInstance from "../helper/api.helper";
+import mapZodError from "../mapper/zod.mapper";
+import userProfileSchema from "../validation/user.validation";
+import { IUserProfile } from "../interface/user.interface";
+import { ZodError } from "zod";
+import StatusCode from "http-status-codes";
 
 async function getUserProfile(req: Request, res: Response, next: NextFunction) {
   try {
@@ -19,5 +28,60 @@ async function getUserProfile(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+async function uploadPostController(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const username = req.user.username;
+    const userId = req.user.userId;
+    const url = req.originalUrl;
+    const correlation_id = req.correlationId;
+    const filepath = req.file?.path;
+    const apiResponse = await uploadProfileService(
+      username as string,
+      filepath as string,
+      userId as string,
+      correlation_id as string
+    );
+    const { data, message } = apiResponse;
+    apiInstance.sendSuccessResponse(res, message, data, url);
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error While Uploading the Post through the Upload Post Controller`
+    );
+    next(err);
+  }
+}
 
-export default getUserProfile;
+async function editUserProfile(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  const apiInstance = getAPIHelperInstance();
+  try {
+    const userId = req.user.userId;
+    const baseUrl = req.originalUrl;
+    const content = await userProfileSchema.parseAsync(req.body);
+    const apiResponse = await editUserProfileService(
+      content as Partial<IUserProfile>,
+      userId as string
+    );
+    const { data, message } = apiResponse;
+    apiInstance.sendSuccessResponse(res, baseUrl, data, message);
+  } catch (err: UnknownAny) {
+    if (err instanceof ZodError) {
+      const mappedError = mapZodError(err.issues as Array<any>);
+      apiInstance.sendErrorResponse(res, mappedError, StatusCode.BAD_REQUEST);
+    }
+    shadowAiLogger.error(
+      `Error while editing the user Profile , Due To : ${JSON.stringify(err)}`
+    );
+    next(err);
+  }
+}
+
+export { getUserProfile, uploadPostController, editUserProfile };

@@ -8,8 +8,12 @@ interface ILogin{
     username:String,
     password:string,
 }
-
+interface IUpdatePassword{
+    currentpassword:String,
+    newpassword:string
+}
 export {
     ISignup,
-    ILogin
+    ILogin,
+    IUpdatePassword
 }

@@ -4,6 +4,7 @@ import {
   loginController,
   logoutController,
   signupController,
+  updatePasswordController,
 } from "../../controller/auth.controller";
 import { verifyAuthToken } from "../../middlewares/auth.middleware";
 
@@ -14,5 +15,7 @@ authRouter.post(authRouteConfig["signup"], signupController);
 authRouter.post(authRouteConfig["login"], loginController);
 
 authRouter.post(authRouteConfig["logout"], verifyAuthToken, logoutController);
+
+authRouter.post(authRouteConfig["updatePassword"],verifyAuthToken,updatePasswordController)
 
 export default authRouter;
