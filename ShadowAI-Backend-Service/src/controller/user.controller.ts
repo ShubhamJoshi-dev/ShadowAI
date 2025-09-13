@@ -1,7 +1,8 @@
-import { NextFunction, Request, Response } from "express";
+import e, { NextFunction, Request, Response } from "express";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
 import {
+  deactivatedUserService,
   editUserProfileService,
   getUserProfileService,
   uploadProfileService,
@@ -84,4 +85,34 @@ async function editUserProfile(
   }
 }
 
-export { getUserProfile, uploadPostController, editUserProfile };
+async function deactivatedUser(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const baseUrl = req.originalUrl;
+    const userId = req.user.userId;
+    const queryContent = req.query;
+    const apiPayload = await deactivatedUserService(userId, queryContent);
+    if (apiPayload) {
+      const { data, message } = apiPayload;
+      apiInstance.sendSuccessResponse(res, baseUrl, data, message);
+    }
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error while deactivating the user profile, Due To : ${JSON.stringify(
+        err
+      )}`
+    );
+    next(err);
+  }
+}
+
+export {
+  getUserProfile,
+  uploadPostController,
+  editUserProfile,
+  deactivatedUser,
+};

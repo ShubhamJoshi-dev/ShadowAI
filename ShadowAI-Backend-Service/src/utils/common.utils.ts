@@ -31,8 +31,27 @@ const isMissingAttributeLog = (key: string): `${string} is Missing` => {
 };
 
 const isComparetwoString = (raw: String, db: string) => {
-    return (
-      String(raw).trim().toLowerCase() === String(db).trim().toLowerCase()
-    );
-  };
-export { excludeObjectKey, checkAndAssign, isMissingAttributeLog,isComparetwoString };
+  return String(raw).trim().toLowerCase() === String(db).trim().toLowerCase();
+};
+
+const isTrueOrFalse = (key: string): boolean => {
+  switch (true) {
+    case key === "true": {
+      return true;
+    }
+    case key === "false": {
+      return false;
+    }
+    default: {
+      return Boolean(key);
+    }
+  }
+};
+
+export {
+  excludeObjectKey,
+  checkAndAssign,
+  isMissingAttributeLog,
+  isComparetwoString,
+  isTrueOrFalse
+};

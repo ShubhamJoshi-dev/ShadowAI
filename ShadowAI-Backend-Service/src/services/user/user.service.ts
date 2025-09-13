@@ -3,7 +3,7 @@ import userModel from "../../database/entities/user.model";
 import { DatabaseException } from "../../exceptions";
 import { HTTP_STATUS } from "../../constant/httpStatus.constant";
 import { IAPIResponse } from "../../interface/api.interface";
-import { excludeObjectKey } from "../../utils/common.utils";
+import { excludeObjectKey, isTrueOrFalse } from "../../utils/common.utils";
 import userProfileModel from "../../database/entities/userProfile.model";
 import shadowAiLogger from "../../libs/logger.libs";
 import { StatusCodes } from "http-status-codes";
@@ -13,7 +13,20 @@ import filehelperinstance from "../../helper/filestream.helper";
 import updateInstance from "../../database/operations/update";
 import cryptohelper from "../../helper/crypto.helper";
 import { IUserProfile } from "../../interface/user.interface";
-import { email } from "zod";
+import {
+  getAccountActivateTemplate,
+  getAccountDeactivateTemplate,
+} from "../../constant/mail.constant";
+import {
+  IS_DEACTIVATED_CONSTANT,
+  IS_DELETED_CONSTANT,
+} from "../../constant/params.constant";
+import { getDefaultAutoSelectFamily } from "net";
+import { getEnvValue } from "../../utils/env.utils";
+import getEmailInstance from "../../helper/smtp.helper";
+import { IEmailOptions } from "../../interface/email.interface";
+import deleteInstance from "../../database/operations/delete";
+import is from "zod/v4/locales/is.cjs";
 
 async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   const searchQuery = searchInstance();
@@ -224,4 +237,184 @@ async function editUserProfileService(
   };
 }
 
-export { getUserProfileService, uploadProfileService, editUserProfileService };
+async function deactivatedUserService(
+  userId: string,
+  queryContent: Record<string, any>
+): Promise<IAPIResponse | undefined> {
+  const { isparams, value } = queryContent;
+
+  const searchQuery = searchInstance();
+  const updateQuery = updateInstance();
+  const deleteQuery = deleteInstance();
+  const smtpHelper = getEmailInstance();
+
+  const userDocument = await searchQuery.search(
+    "userId",
+    userId,
+    userProfileModel
+  );
+
+  if (!userDocument) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The User Does not Exists on the System`
+    );
+  }
+
+  switch (isparams) {
+    case IS_DEACTIVATED_CONSTANT: {
+      shadowAiLogger.info(`The Deactivated Process Has been Started`);
+      const userDeactivated = userDocument._doc.isDeactivated;
+
+      const isUserDeactivated =
+        typeof userDeactivated === "boolean" && Boolean(userDeactivated);
+
+      if (isUserDeactivated && isTrueOrFalse(value)) {
+        throw new DatabaseException(
+          HTTP_STATUS.DATABASE_ERROR.CODE,
+          `The User Has Already Been Deactivated`
+        );
+      }
+
+      const deactivatedPayload = Object.preventExtensions({
+        isDeactivated: isTrueOrFalse(value),
+      });
+
+      const updateOperationPayload = await updateQuery.updateOperation(
+        "userId",
+        userId,
+        deactivatedPayload,
+        userProfileModel
+      );
+
+      const isResultUpdated =
+        updateOperationPayload.acknowledged &&
+        updateOperationPayload.matchedCount > 0;
+
+      if (!isResultUpdated) {
+        throw new DatabaseException(
+          HTTP_STATUS.DATABASE_ERROR.CODE,
+          `The Update Operation Failed for deactivating the User`
+        );
+      }
+
+      const navigationLink = `${getEnvValue("FRONTEND_URL")}/auth/login`;
+
+      const accountEmailTemplate = isTrueOrFalse(value)
+        ? getAccountDeactivateTemplate(
+            userDocument._doc.userProfileName,
+            userDocument._doc.primaryEmail,
+            userDocument._doc.userRole
+          )
+        : getAccountActivateTemplate(
+            userDocument._doc.userProfileName,
+            userDocument._doc.primaryEmail,
+            userDocument._doc.userRole,
+            navigationLink
+          );
+
+      const { html, text } = accountEmailTemplate;
+
+      const emailOptions = Object.freeze({
+        html: html,
+        to: userDocument._doc.primaryEmail,
+        text: text,
+        subject: isTrueOrFalse(value)
+          ? "Account Deactivation Information"
+          : "Account Activation Information",
+      } as IEmailOptions);
+
+      await smtpHelper.sendMail(emailOptions);
+      shadowAiLogger.info(
+        `Email sent to ${userDocument._doc.primaryEmail} with admin access details`
+      );
+
+      return {
+        data: {
+          [`${userId}`]: {
+            deactivated: isTrueOrFalse(value),
+          },
+        },
+        message: `The User Has been ${
+          isTrueOrFalse(value) ? "Deactivated" : "Activated"
+        }`,
+      };
+    }
+
+    case IS_DELETED_CONSTANT: {
+      shadowAiLogger.info(`The Deleted Process Has been Started`);
+      const userDeleted = userDocument._doc.isDeleted;
+      const isUserDeleted =
+        typeof userDeleted === "boolean" && Boolean(userDeleted);
+      if (isUserDeleted && isTrueOrFalse(value)) {
+        throw new DatabaseException(
+          HTTP_STATUS.DATABASE_ERROR.CODE,
+          `The User Has Already been Deleted`
+        );
+      }
+      const isDeletedPayload = Object.preventExtensions({
+        isDeleted: isTrueOrFalse(value),
+      });
+      const updateOperationPayload = await updateQuery.updateOperation(
+        "userId",
+        userId,
+        isDeletedPayload,
+        userProfileModel
+      );
+
+      const isResultUpdated =
+        updateOperationPayload.acknowledged &&
+        updateOperationPayload.matchedCount > 0;
+
+      if (!isResultUpdated) {
+        throw new DatabaseException(
+          HTTP_STATUS.DATABASE_ERROR.CODE,
+          `The Update Operation Failed for deleting the User`
+        );
+      }
+
+      const deleteUserIds = await deleteQuery.deleteUserAndUserProfile(
+        userId,
+        userModel,
+        userProfileModel
+      );
+
+      const isErrorOnPromise = deleteUserIds.filter(
+        (item) => item.status !== "fulfilled"
+      );
+      const isErrorExists =
+        Array.isArray(isErrorOnPromise) && isErrorOnPromise.length > 0;
+
+      if (isErrorExists) {
+        throw new DatabaseException(
+          HTTP_STATUS.DATABASE_ERROR.CODE,
+          `There is Error while deleting the User From the Database`
+        );
+      }
+
+      return {
+        data: {
+          [`${userId}`]: {
+            delete: Boolean(value),
+          },
+        },
+        message: `The User Has been ${
+          Boolean(value) ? "Is Deleted" : "Not Is Deleted"
+        }`,
+      };
+    }
+    default: {
+      return {
+        data: null,
+        message: `The Query Params is not match, it should be ["isDeactivated","isDeleted"], But the Request is forwarding : ${isparams}`,
+      };
+    }
+  }
+}
+
+export {
+  getUserProfileService,
+  uploadProfileService,
+  editUserProfileService,
+  deactivatedUserService,
+};
