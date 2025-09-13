@@ -5,6 +5,7 @@ import {
   deactivatedUser,
   editUserProfile,
   getUserProfile,
+  removeImage,
   uploadPostController,
 } from "../../controller/user.controller";
 import validateRepeatedToken from "../../middlewares/tokenValidator.middleware";
@@ -43,6 +44,13 @@ userRouter.patch(
   verifyAuthToken,
   validateRepeatedToken,
   deactivatedUser
+);
+
+userRouter.patch(
+  userRouteConfig["removeImage"],
+  verifyAuthToken,
+  validateRepeatedToken,
+  removeImage
 );
 
 export default userRouter;

@@ -50,16 +50,18 @@ async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   Object.assign(newPayload, userDocs._doc);
   Object.assign(newPayload, userDocs._doc.userId._doc);
 
-  const userImageDocs = userDocs.imageId._doc;
+  if (userDocs.imageId) {
+    const userImageDocs = userDocs.imageId._doc;
 
-  const decodedImage64 = await imageCrypto.decryptKeys(
-    userImageDocs.image,
-    userImageDocs.ImageKey,
-    userImageDocs.imageIv
-  );
-  Object.assign(newPayload, {
-    image: decodedImage64,
-  });
+    const decodedImage64 = await imageCrypto.decryptKeys(
+      userImageDocs.image,
+      userImageDocs.ImageKey,
+      userImageDocs.imageIv
+    );
+    Object.assign(newPayload, {
+      image: decodedImage64,
+    });
+  }
 
   if ("userId" in newPayload) {
     shadowAiLogger.info("Deleting the User ID From the Profile Service");
@@ -433,9 +435,59 @@ async function deactivatedUserService(
   }
 }
 
+async function removeImageService(userId: string): Promise<IAPIResponse> {
+  const searchQuery = searchInstance();
+  const deleteQuery = deleteInstance();
+
+  const userDocuments = await searchQuery.search(
+    "userId",
+    userId,
+    userProfileModel
+  );
+
+  if (!userDocuments) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The User Does not Exists on the System`
+    );
+  }
+
+  const userImageId = userDocuments._doc.imageId;
+
+  if (!userImageId) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The Image is not Uploaded by the User, Cannot Delete`
+    );
+  }
+
+  const deleteOperationPayload = await deleteQuery.delete(
+    "_id",
+    userImageId,
+    imageModel
+  );
+
+  const isDeletedStatus =
+    deleteOperationPayload.acknowledged &&
+    deleteOperationPayload.deletedCount > 0;
+
+  if (!isDeletedStatus) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The Database Cannot Delete the Image`
+    );
+  }
+
+  return {
+    data: isDeletedStatus,
+    message: "The Image Has been Removed",
+  };
+}
+
 export {
   getUserProfileService,
   uploadProfileService,
   editUserProfileService,
   deactivatedUserService,
+  removeImageService,
 };

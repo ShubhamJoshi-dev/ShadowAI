@@ -5,6 +5,7 @@ import {
   deactivatedUserService,
   editUserProfileService,
   getUserProfileService,
+  removeImageService,
   uploadProfileService,
 } from "../services/user/user.service";
 import getAPIHelperInstance from "../helper/api.helper";
@@ -13,6 +14,7 @@ import userProfileSchema from "../validation/user.validation";
 import { IUserProfile } from "../interface/user.interface";
 import { ZodError } from "zod";
 import StatusCode from "http-status-codes";
+import { da } from "zod/v4/locales/index.cjs";
 
 async function getUserProfile(req: Request, res: Response, next: NextFunction) {
   try {
@@ -110,9 +112,26 @@ async function deactivatedUser(
   }
 }
 
+async function removeImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const baseURL = req.originalUrl;
+    const userId = req.user.userId;
+    const apiPayload = await removeImageService(userId);
+    const { data, message } = apiPayload;
+    apiInstance.sendSuccessResponse(res, baseURL, data, message);
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error while Removing the Image from the User Profile, Due To : ${err}`
+    );
+    next(err);
+  }
+}
+
 export {
   getUserProfile,
   uploadPostController,
   editUserProfile,
   deactivatedUser,
+  removeImage,
 };

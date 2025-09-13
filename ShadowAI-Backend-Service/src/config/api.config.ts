@@ -17,5 +17,6 @@ export const userRouteConfig = {
   getUserProfile: "/user/profile",
   editUserProfile: "/user/profile/edit",
   uploadImage: "/user/profile/upload",
+  removeImage: "/user/profile/remove-image",
   deactivatedUser: "/user/profile/status",
 };

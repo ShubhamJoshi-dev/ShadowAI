@@ -1,4 +1,5 @@
 import shadowAiLogger from "../../libs/logger.libs";
+import imageModel from "../entities/image.model";
 import userModel from "../entities/user.model";
 
 class DeleteOperation {
@@ -21,6 +22,13 @@ class DeleteOperation {
       }),
     ]);
     return isPromiseDeletd;
+  }
+
+  public async delete(key: string, value: any, model: any) {
+    const deletePayload = await model.deleteOne({
+      [`${key}`]: value,
+    });
+    return deletePayload;
   }
 }
 
