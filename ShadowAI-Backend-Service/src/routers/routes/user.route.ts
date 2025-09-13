@@ -46,7 +46,7 @@ userRouter.patch(
   deactivatedUser
 );
 
-userRouter.patch(
+userRouter.delete(
   userRouteConfig["removeImage"],
   verifyAuthToken,
   validateRepeatedToken,

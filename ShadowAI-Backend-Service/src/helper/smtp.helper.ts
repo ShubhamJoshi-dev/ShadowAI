@@ -39,10 +39,14 @@ export class EmailService {
       shadowAiLogger.error("Error sending email:", error);
     }
   }
+
+  public async getRedirectUrl(tokenId: string) {
+    return `${getEnvValue("FRONTEND_URL")}/reset-password/${tokenId}`;
+  }
 }
 
 const getEmailInstance = (): EmailService => {
   return new EmailService();
 };
 
-export default getEmailInstance
+export default getEmailInstance;

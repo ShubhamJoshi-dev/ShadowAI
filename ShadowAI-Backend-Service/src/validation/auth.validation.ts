@@ -34,4 +34,22 @@ const updatePasswordSchema = zod.object({
   }),
 });
 
-export { signupSchema, loginSchema, updatePasswordSchema };
+const forgetPasswordSchema = zod.object({
+  email: zod.string().email({
+    message: `Please Enter the Correct Format Email`,
+  }),
+});
+
+const resetPasswordSchema = zod.object({
+  newPassword: zod.string().min(8, {
+    message: `The New Password Must be At Least 8 Character Long`,
+  }),
+});
+
+export {
+  signupSchema,
+  loginSchema,
+  updatePasswordSchema,
+  forgetPasswordSchema,
+  resetPasswordSchema,
+};

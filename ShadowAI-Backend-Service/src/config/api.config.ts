@@ -10,6 +10,8 @@ export const authRouteConfig = {
   signup: "/signup",
   login: "/login",
   logout: "/logout",
+  forgetPassword: '/forget-password',
+  resetPassword: '/reset-password',
   updatePassword: "/updatepassword",
 };
 

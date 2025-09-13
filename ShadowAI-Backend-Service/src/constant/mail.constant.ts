@@ -426,3 +426,134 @@ Thank you for being part of our community.
 
   return { html, text };
 };
+
+export const getPasswordResetTemplate = (
+  username: string,
+  email: string,
+  resetLink: string,
+  expiryHours = 1
+): { subject: string; html: string; text: string } => {
+  const esc = (s: string) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const safeUser = esc(username);
+  const safeEmail = esc(email);
+  const safeLink = esc(resetLink);
+  const safeExpiry = esc(String(expiryHours));
+
+  const subject = `Reset your password`;
+
+  const html = `<!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Password Reset</title>
+    <style>
+      /* Reset & base */
+      body,table,td{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+      img{border:0;display:block;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}
+      a{text-decoration:none;}
+
+      .email-wrap{width:100%;background:#f4f7fb;padding:30px 12px;}
+      .email-body{max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(16,24,40,0.06);}
+      .p-28{padding:28px;}
+
+      .brand{display:flex;align-items:center;gap:12px;}
+      .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#60a5fa,#7c3aed);animation:float 5s ease-in-out infinite;}
+      @keyframes float {0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+
+      h1{font-size:20px;margin:8px 0 0 0;color:#0f172a;}
+      p{color:#334155;line-height:1.5;margin:14px 0;font-size:15px;}
+
+      .cta {
+        display:inline-block;padding:14px 22px;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;
+        text-decoration:none;margin-top:18px;border:1px solid rgba(37,99,235,0.15);
+      }
+
+      .note {
+        background:#f1f5f9;border:1px solid #e2e8f0;padding:12px;border-radius:8px;font-size:13px;color:#475569;margin:16px 0;
+      }
+
+      .footer{font-size:12px;color:#94a3b8;padding:18px;text-align:center;background:#fbfdff;border-top:1px solid #eef2ff;}
+      @media only screen and (max-width:480px){.p-28{padding:18px;}h1{font-size:18px;}}
+    </style>
+  </head>
+  <body>
+    <center class="email-wrap">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table role="presentation" class="email-body" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="p-28">
+                  <div class="brand" style="display:flex;align-items:center;gap:12px;">
+                    <div class="logo" aria-hidden="true"></div>
+                    <div>
+                      <div style="font-size:14px;color:#0f172a;font-weight:700;">Shadow AIy</div>
+                      <div style="font-size:12px;color:#9aa4b2;">Password Assistance</div>
+                    </div>
+                  </div>
+
+                  <h1>Password reset request</h1>
+
+                  <p>Hi <strong>${safeUser}</strong>,</p>
+
+                  <p>We received a request to reset the password for the account associated with <strong>${safeEmail}</strong>.</p>
+
+                  <p style="text-align:center;">
+                    <a href="${safeLink}" class="cta">Reset my password</a>
+                  </p>
+
+                  <p style="text-align:center;font-size:13px;color:#2563eb;word-break:break-all;">${safeLink}</p>
+
+                  <div class="note">
+                    This link will expire in <strong>${safeExpiry} hour(s)</strong> for your security. If you did not request a password reset, you can safely ignore this email — your password will remain unchanged.
+                  </div>
+
+                  <p style="font-size:13px;color:#6b7280;">
+                    If you have any trouble, contact our support at <a href="mailto:support@yourcompany.com">support@yourcompany.com</a>.
+                  </p>
+
+                  <hr style="border:none;border-top:1px solid #f1f5f9;margin:22px 0;" />
+
+                  <p style="font-size:13px;color:#94a3b8;">
+                    For security, do not share this link. If your reset link fails, request a new one from the app.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="footer">
+                  © ${new Date().getFullYear()} Shadow AI. This is an automated message.
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+  </html>`;
+
+  const text = `Password reset request
+
+Hi ${safeUser},
+
+We received a request to reset the password for the account associated with ${safeEmail}.
+
+Reset link:
+${safeLink}
+
+This link will expire in ${safeExpiry} hour(s). If you did not request a password reset, please ignore this message or contact support@yourcompany.com.
+
+-- Shadow AI`;
+
+  return { subject, html, text };
+};
