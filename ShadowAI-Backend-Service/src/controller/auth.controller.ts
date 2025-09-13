@@ -1,11 +1,24 @@
-import { application, NextFunction, Request, Response } from "express";
-import { ILogin, ISignup } from "../interface/auth.interface";
-import { loginSchema, signupSchema, updatePasswordSchema } from "../validation/auth.validation";
+import { NextFunction, Request, Response } from "express";
+import {
+  IForgetPassword,
+  ILogin,
+  IResetPassword,
+  ISignup,
+} from "../interface/auth.interface";
+import {
+  forgetPasswordSchema,
+  loginSchema,
+  resetPasswordSchema,
+  signupSchema,
+  updatePasswordSchema,
+} from "../validation/auth.validation";
 import {
   signupService,
   loginService,
   logoutService,
   updatePasswordService,
+  forgetPasswordService,
+  resetPasswordService,
 } from "../services/auth/auth.services";
 import getAPIHelperInstance from "../helper/api.helper";
 import { UnknownAny } from "../types/types";
@@ -14,8 +27,6 @@ import { core, ZodError, ZodRealError } from "zod";
 import mapZodError from "../mapper/zod.mapper";
 import HttpStatusCode from "http-status-codes";
 import { HttpExceptions } from "../exceptions";
-import { da, ur } from "zod/v4/locales/index.cjs";
-import { constants } from "http2";
 
 async function signupController(
   req: Request,
@@ -98,37 +109,82 @@ async function logoutController(
 }
 
 async function updatePasswordController(
-  req:Request,
-  res:Response,
-  next:NextFunction
-)
-{
-  try{
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const apiInstance = getAPIHelperInstance();
 
-  const apiInstance= getAPIHelperInstance();
+    const url = req.originalUrl;
 
-  const url = req.originalUrl
+    const username = req.user.username;
 
-  const username=req.user.username
+    const body = req.body;
 
-  const body = req.body
+    const correlation_id = req.correlationId;
 
-  const correlation_id= req.correlationId
+    const validcontent = await updatePasswordSchema.parseAsync(body);
 
-  const validcontent = await updatePasswordSchema.parseAsync(body);
+    const apiPayload = await updatePasswordService(
+      username,
+      validcontent,
+      correlation_id
+    );
 
-  const apiPayload= await updatePasswordService(username,validcontent,correlation_id)
-
-  const {data,message} = apiPayload;
-  apiInstance.sendSuccessResponse(res,url,data,message)
+    const { data, message } = apiPayload;
+    apiInstance.sendSuccessResponse(res, url, data, message);
+  } catch (err) {
+    shadowAiLogger.info("Error in the UpdatePassword Controller");
+    next(err);
   }
-  catch(err){
-    shadowAiLogger.info('Error in the UpdatePassword Controller')
-    next(err)
-  }
-
-
 }
 
-export { signupController, loginController, logoutController, updatePasswordController };
+async function forgetPassword(req: Request, res: Response, next: NextFunction) {
+  try {
+    const apiHelper = getAPIHelperInstance();
+    const baseUrl = req.originalUrl;
+    const content = await forgetPasswordSchema.parseAsync(req.body);
+    const apiPayload = await forgetPasswordService(content as IForgetPassword);
+    const { data, message } = apiPayload;
+    apiHelper.sendSuccessResponse(res, baseUrl, data, message);
+  } catch (err: UnknownAny) {
+    shadowAiLogger.info(
+      `Error in the Forget Password Controller, Due To : ${err}`
+    );
+    next(err);
+  }
+}
 
+async function resetPassword(req: Request, res: Response, next: NextFunction) {
+  try {
+    const apiHelper = getAPIHelperInstance();
+    const baseUrl = req.originalUrl;
+    const content = await resetPasswordSchema.parseAsync(
+      req.body as IResetPassword
+    );
+    const tokenPayload = {
+      tokenId: req.params.id,
+    };
+    const apiPayload = await resetPasswordService(
+      content as IResetPassword,
+      tokenPayload
+    );
+    const { data, message } = apiPayload;
+    apiHelper.sendSuccessResponse(res, baseUrl, data, message);
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error in the Reset Password Controller, Due to : ${err}`
+    );
+    next(err);
+  }
+}
+
+export {
+  signupController,
+  loginController,
+  logoutController,
+  updatePasswordController,
+  forgetPassword,
+  resetPassword,
+};

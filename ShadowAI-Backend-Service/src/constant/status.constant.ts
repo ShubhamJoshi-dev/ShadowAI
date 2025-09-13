@@ -1,3 +1,3 @@
 export const addBasicRateLimit = true;
 
-export const flushAllEnabled = true;
+export const flushAllEnabled = false;

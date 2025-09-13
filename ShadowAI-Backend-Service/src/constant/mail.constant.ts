@@ -1,0 +1,559 @@
+import { getEnvValue } from "../utils/env.utils";
+
+export const getAccountDeactivateTemplate = (
+  username: string,
+  email: string,
+  role: string
+): { html: string; text: string } => {
+  const esc = (s: string) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const safeUser = esc(username);
+  const safeEmail = esc(email);
+  const safeRole = esc(role);
+
+  const html = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Account Deactivated</title>
+    <style>
+      /* Basic reset for email clients */
+      body,table,td{margin:0;padding:0;font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+      img{border:0;display:block;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}
+      a{text-decoration:none;}
+
+      /* Container */
+      .email-wrap{width:100%;background:#f5f7fb;padding:30px 12px;}
+      .email-body{max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(20,30,50,0.06);}
+      .p-28{padding:28px;}
+
+      /* Header with subtle animation (degrades gracefully) */
+      .brand {
+        display:flex;align-items:center;gap:12px;
+      }
+      .logo {
+        width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#5b8cff,#00c2a8);
+        display:inline-block;flex-shrink:0;
+        /* simple pulse animation for supporting clients */
+        animation: pulse 4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%{transform:scale(1);opacity:1}
+        50%{transform:scale(1.06);opacity:.95}
+        100%{transform:scale(1);opacity:1}
+      }
+
+      h1{font-size:20px;margin:8px 0 0 0;color:#102a43;}
+      p{color:#41556b;line-height:1.5;margin:14px 0;font-size:15px;}
+
+      .info {
+        background:#f1f6ff;border:1px solid #e6efff;padding:12px;border-radius:8px;font-size:13px;color:#173e8a;margin:16px 0;
+      }
+
+      .cta {
+        display:inline-block;padding:12px 18px;border-radius:10px;background:#0b75db;color:#fff;font-weight:600;
+        text-decoration:none;margin-top:10px;border:1px solid rgba(11,117,219,0.15);
+      }
+      /* small footer */
+      .footer{font-size:12px;color:#94a3b8;padding:18px;text-align:center;background:#fbfdff;border-top:1px solid #f0f4ff;}
+      .meta {font-size:13px;color:#6b7280;margin-top:8px;}
+
+      /* mobile */
+      @media only screen and (max-width:480px){
+        .p-28{padding:18px;}
+        h1{font-size:18px;}
+      }
+    </style>
+  </head>
+  <body>
+    <center class="email-wrap">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table role="presentation" class="email-body" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="p-28">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding-bottom:14px;">
+                        <div class="brand" style="display:flex;align-items:center;gap:12px;">
+                          <div class="logo" aria-hidden="true"></div>
+                          <div>
+                            <div style="font-size:14px;color:#0b3b66;font-weight:700;">Shadow AI</div>
+                            <div style="font-size:12px;color:#7b8ba1;">Account Notification</div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td>
+                        <h1>Account deactivated</h1>
+                        <p>Hi <strong>${safeUser}</strong>,</p>
+                        <p>
+                          We wanted to let you know that the account associated with
+                          <strong>${safeEmail}</strong> (${safeRole}) has been <strong>deactivated</strong> in our system.
+                        </p>
+
+                        <div class="info">
+                          <div><strong>Reason:</strong> Your account has been deactivated as part of account cleanup / security policy.</div>
+                          <div class="meta">Deactivation date: <strong>${new Date().toLocaleString()}</strong></div>
+                        </div>
+
+                        <p>
+                          If you believe this is a mistake or you need access restored, please contact our support team and include your account email above. We'll review and respond as soon as possible.
+                        </p>
+
+                        <p style="margin-top:18px;">
+                          <a href="mailto:support@yourcompany.com" class="cta">Contact Support</a>
+                        </p>
+
+                        <hr style="border:none;border-top:1px solid #f0f4ff;margin:22px 0;" />
+
+                        <p style="font-size:13px;color:#6b7280;">
+                          For your security, data access related to this account is paused. If you request reactivation we may require identity verification.
+                        </p>
+
+                        <p style="font-size:13px;color:#6b7280;margin-top:6px;">
+                          If you'd like a record of this notice, please save this email.
+                        </p>
+                      </td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding-top:18px;">
+                        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td style="font-size:13px;color:#62748a;">
+                              <strong>Account</strong><br/>
+                              ${safeUser} • ${safeEmail}<br/>
+                              Role: ${safeRole}
+                            </td>
+                            <td align="right" style="font-size:13px;color:#94a3b8;">
+                              <div>Need help?</div>
+                              <div style="margin-top:6px;"><a href="https://yourcompany.com/help" style="color:#0b75db;">Help center</a></div>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+
+                  </table>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="footer">
+                  © ${new Date().getFullYear()} ShadowAI<br/>
+                  This is an automated message — please do not reply to this email.
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+  </html>
+  `;
+
+  const text = `
+Account deactivated
+
+Hi ${safeUser},
+
+The account associated with ${safeEmail} (${safeRole}) has been deactivated.
+
+Reason: Account deactivated as part of account cleanup/security policy.
+Deactivation date: ${new Date().toLocaleString()}
+
+If you believe this is a mistake or need access restored, please contact support@yourcompany.com
+
+-- ShadowAI
+`;
+
+  return { html, text };
+};
+
+export const getAccountActivateTemplate = (
+  username: string,
+  email: string,
+  role: string,
+  activationLink: string
+): { html: string; text: string } => {
+  const esc = (s: string) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const safeUser = esc(username);
+  const safeEmail = esc(email);
+  const safeRole = esc(role);
+  const safeLink = esc(activationLink);
+
+  const html = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Activate Your Account</title>
+    <style>
+      body,table,td{margin:0;padding:0;font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+      img{border:0;display:block;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}
+      a{text-decoration:none;}
+
+      .email-wrap{width:100%;background:#f5f7fb;padding:30px 12px;}
+      .email-body{max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(20,30,50,0.06);}
+      .p-28{padding:28px;}
+
+      .brand {display:flex;align-items:center;gap:12px;}
+      .logo {
+        width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#34d399,#059669);
+        animation: pulse 4s ease-in-out infinite;
+      }
+      @keyframes pulse {
+        0%{transform:scale(1);opacity:1}
+        50%{transform:scale(1.06);opacity:.95}
+        100%{transform:scale(1);opacity:1}
+      }
+
+      h1{font-size:20px;margin:8px 0 0 0;color:#102a43;}
+      p{color:#41556b;line-height:1.5;margin:14px 0;font-size:15px;}
+
+      .cta {
+        display:inline-block;padding:14px 22px;border-radius:10px;background:#10b981;color:#fff;font-weight:600;
+        text-decoration:none;margin-top:20px;border:1px solid rgba(16,185,129,0.2);
+      }
+
+      .footer{font-size:12px;color:#94a3b8;padding:18px;text-align:center;background:#fbfdff;border-top:1px solid #f0f4ff;}
+      @media only screen and (max-width:480px){.p-28{padding:18px;}h1{font-size:18px;}}
+    </style>
+  </head>
+  <body>
+    <center class="email-wrap">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table role="presentation" class="email-body" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="p-28">
+                  <div class="brand">
+                    <div class="logo"></div>
+                    <div>
+                      <div style="font-size:14px;color:#0b3b66;font-weight:700;">Shadow AI</div>
+                      <div style="font-size:12px;color:#7b8ba1;">Account Activation</div>
+                    </div>
+                  </div>
+
+                  <h1>Welcome, ${safeUser}!</h1>
+                  <p>
+                    The account associated with <strong>${safeEmail}</strong> (${safeRole}) has been created.  
+                    To start using it, please activate your account.
+                  </p>
+
+                  <p style="text-align:center;">
+                    <a href="${safeLink}" class="cta">Activate Account</a>
+                  </p>
+
+                  <p>If the button above doesn’t work, copy and paste this link into your browser:</p>
+                  <p style="word-break:break-all;font-size:13px;color:#2563eb;">${safeLink}</p>
+
+                  <p style="font-size:13px;color:#6b7280;margin-top:20px;">
+                    This activation link will expire in 24 hours for security reasons.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="footer">
+                  © ${new Date().getFullYear()} Shadow AI. 123 <br/>
+                  This is an automated message — please do not reply to this email.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+  </html>
+  `;
+
+  const text = `
+Activate Your Account
+
+Welcome, ${safeUser}!
+
+The account associated with ${safeEmail} (${safeRole}) has been created.
+To start using it, please activate your account:
+
+${safeLink}
+
+This link will expire in 24 hours.
+-- Shadow AI
+`;
+
+  return { html, text };
+};
+
+export const getAccountDeletedTemplate = (
+  username: string,
+  email: string,
+  role: string
+): { html: string; text: string } => {
+  const esc = (s: string) =>
+    String(s)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const safeUser = esc(username);
+  const safeEmail = esc(email);
+  const safeRole = esc(role);
+
+  const html = `
+  <!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Account Deleted</title>
+    <style>
+      body,table,td{margin:0;padding:0;font-family: -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+      a{text-decoration:none;}
+
+      .email-wrap{width:100%;background:#f9fafb;padding:30px 12px;}
+      .email-body{max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 6px 18px rgba(20,30,50,0.05);}
+      .p-28{padding:28px;}
+
+      .brand{display:flex;align-items:center;gap:12px;}
+      .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#f87171,#ef4444);}
+
+      h1{font-size:20px;margin:12px 0 0 0;color:#991b1b;}
+      p{color:#374151;line-height:1.5;margin:14px 0;font-size:15px;}
+
+      .info{background:#fef2f2;border:1px solid #fee2e2;padding:12px;border-radius:8px;font-size:13px;color:#991b1b;margin:16px 0;}
+
+      .cta{display:inline-block;padding:12px 18px;border-radius:10px;background:#ef4444;color:#fff;font-weight:600;text-decoration:none;margin-top:10px;}
+
+      .footer{font-size:12px;color:#9ca3af;padding:18px;text-align:center;background:#f9fafb;border-top:1px solid #f3f4f6;}
+    </style>
+  </head>
+  <body>
+    <center class="email-wrap">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table role="presentation" class="email-body" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="p-28">
+                  <div class="brand">
+                    <div class="logo"></div>
+                    <div>
+                      <div style="font-size:14px;color:#991b1b;font-weight:700;">Shadow AI</div>
+                      <div style="font-size:12px;color:#9ca3af;">Account Deleted</div>
+                    </div>
+                  </div>
+
+                  <h1>Goodbye, ${safeUser}</h1>
+                  <p>
+                    The account associated with <strong>${safeEmail}</strong> (${safeRole}) has been permanently deleted from our system.
+                  </p>
+
+                  <div class="info">
+                    Your data has been securely removed and you will no longer have access to this account.
+                  </div>
+
+                  <p>
+                    If you deleted your account by mistake or would like to return, you are always welcome to create a new account with us.
+                  </p>
+
+                  <p style="margin-top:20px;">
+                    <a href="${getEnvValue(
+                      "FRONTEND_URL"
+                    )}/auth/signup" class="cta">Create a New Account</a>
+                  </p>
+
+                  <p style="font-size:13px;color:#6b7280;margin-top:20px;">
+                    Thank you for being part of our community. We hope to see you again in the future.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="footer">
+                  © ${new Date().getFullYear()} Shadow AI. All rights reserved.<br/>
+                  This is an automated message — please do not reply.
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+  </html>
+  `;
+
+  const text = `
+Goodbye, ${safeUser}
+
+The account associated with ${safeEmail} (${safeRole}) has been permanently deleted from our system.
+
+Your data has been securely removed and you will no longer have access to this account.
+
+If you deleted your account by mistake or would like to return, you can create a new account at:
+${getEnvValue("FRONTEND_URL")}/auth/signup
+
+Thank you for being part of our community.
+-- Shadow AI
+`;
+
+  return { html, text };
+};
+
+export const getPasswordResetTemplate = (
+  username: string,
+  email: string,
+  resetLink: string,
+  expiryHours = 1
+): { subject: string; html: string; text: string } => {
+  const esc = (s: string) =>
+    String(s ?? "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+
+  const safeUser = esc(username);
+  const safeEmail = esc(email);
+  const safeLink = esc(resetLink);
+  const safeExpiry = esc(String(expiryHours));
+
+  const subject = `Reset your password`;
+
+  const html = `<!doctype html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Password Reset</title>
+    <style>
+      /* Reset & base */
+      body,table,td{margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;}
+      img{border:0;display:block;outline:none;text-decoration:none;-ms-interpolation-mode:bicubic;}
+      a{text-decoration:none;}
+
+      .email-wrap{width:100%;background:#f4f7fb;padding:30px 12px;}
+      .email-body{max-width:680px;margin:0 auto;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 8px 24px rgba(16,24,40,0.06);}
+      .p-28{padding:28px;}
+
+      .brand{display:flex;align-items:center;gap:12px;}
+      .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,#60a5fa,#7c3aed);animation:float 5s ease-in-out infinite;}
+      @keyframes float {0%{transform:translateY(0)}50%{transform:translateY(-4px)}100%{transform:translateY(0)}}
+
+      h1{font-size:20px;margin:8px 0 0 0;color:#0f172a;}
+      p{color:#334155;line-height:1.5;margin:14px 0;font-size:15px;}
+
+      .cta {
+        display:inline-block;padding:14px 22px;border-radius:10px;background:#2563eb;color:#fff;font-weight:700;
+        text-decoration:none;margin-top:18px;border:1px solid rgba(37,99,235,0.15);
+      }
+
+      .note {
+        background:#f1f5f9;border:1px solid #e2e8f0;padding:12px;border-radius:8px;font-size:13px;color:#475569;margin:16px 0;
+      }
+
+      .footer{font-size:12px;color:#94a3b8;padding:18px;text-align:center;background:#fbfdff;border-top:1px solid #eef2ff;}
+      @media only screen and (max-width:480px){.p-28{padding:18px;}h1{font-size:18px;}}
+    </style>
+  </head>
+  <body>
+    <center class="email-wrap">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <table role="presentation" class="email-body" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td class="p-28">
+                  <div class="brand" style="display:flex;align-items:center;gap:12px;">
+                    <div class="logo" aria-hidden="true"></div>
+                    <div>
+                      <div style="font-size:14px;color:#0f172a;font-weight:700;">Shadow AIy</div>
+                      <div style="font-size:12px;color:#9aa4b2;">Password Assistance</div>
+                    </div>
+                  </div>
+
+                  <h1>Password reset request</h1>
+
+                  <p>Hi <strong>${safeUser}</strong>,</p>
+
+                  <p>We received a request to reset the password for the account associated with <strong>${safeEmail}</strong>.</p>
+
+                  <p style="text-align:center;">
+                    <a href="${safeLink}" class="cta">Reset my password</a>
+                  </p>
+
+                  <p style="text-align:center;font-size:13px;color:#2563eb;word-break:break-all;">${safeLink}</p>
+
+                  <div class="note">
+                    This link will expire in <strong>${safeExpiry} hour(s)</strong> for your security. If you did not request a password reset, you can safely ignore this email — your password will remain unchanged.
+                  </div>
+
+                  <p style="font-size:13px;color:#6b7280;">
+                    If you have any trouble, contact our support at <a href="mailto:support@yourcompany.com">support@yourcompany.com</a>.
+                  </p>
+
+                  <hr style="border:none;border-top:1px solid #f1f5f9;margin:22px 0;" />
+
+                  <p style="font-size:13px;color:#94a3b8;">
+                    For security, do not share this link. If your reset link fails, request a new one from the app.
+                  </p>
+                </td>
+              </tr>
+
+              <tr>
+                <td class="footer">
+                  © ${new Date().getFullYear()} Shadow AI. This is an automated message.
+                </td>
+              </tr>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+    </center>
+  </body>
+  </html>`;
+
+  const text = `Password reset request
+
+Hi ${safeUser},
+
+We received a request to reset the password for the account associated with ${safeEmail}.
+
+Reset link:
+${safeLink}
+
+This link will expire in ${safeExpiry} hour(s). If you did not request a password reset, please ignore this message or contact support@yourcompany.com.
+
+-- Shadow AI`;
+
+  return { subject, html, text };
+};

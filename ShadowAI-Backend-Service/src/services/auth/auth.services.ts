@@ -1,6 +1,16 @@
 import { StatusCodes } from "http-status-codes";
-import { BadRequestException, DatabaseException } from "../../exceptions";
-import { ILogin, ISignup, IUpdatePassword } from "../../interface/auth.interface";
+import {
+  BadRequestException,
+  DatabaseException,
+  ValidationException,
+} from "../../exceptions";
+import {
+  IForgetPassword,
+  ILogin,
+  IResetPassword,
+  ISignup,
+  IUpdatePassword,
+} from "../../interface/auth.interface";
 import { IAPIResponse } from "../../interface/api.interface";
 import searchInstance from "../../database/operations/select";
 import userModel from "../../database/entities/user.model";
@@ -8,13 +18,16 @@ import cryptohelper from "../../helper/crypto.helper";
 import createInstance from "../../database/operations/create";
 import { excludeObjectKey, isComparetwoString } from "../../utils/common.utils";
 import BaseController from "../../controller/base.controller";
-import { access } from "fs";
-import { jwt } from "zod";
 import shadowAiLogger from "../../libs/logger.libs";
 import userProfileModel from "../../database/entities/userProfile.model";
 import tokenModel from "../../database/entities/token.model";
-import { Http } from "winston/lib/winston/transports";
 import updateInstance from "../../database/operations/update";
+import crypto from "crypto";
+import { HTTP_STATUS } from "../../constant/httpStatus.constant";
+import passwordTokenModel from "../../database/entities/passwordToken.model";
+import getEmailInstance from "../../helper/smtp.helper";
+import { getPasswordResetTemplate } from "../../constant/mail.constant";
+import { IEmailOptions } from "../../interface/email.interface";
 
 const baseInstance = new BaseController();
 
@@ -119,8 +132,6 @@ async function loginService(content: Required<ILogin>): Promise<IAPIResponse> {
     databaseIv
   );
 
-  
-
   const isValidPassword = isComparetwoString(password, decryptedPassword);
 
   if (!isValidPassword) {
@@ -199,29 +210,24 @@ async function logoutService(
   };
 }
 async function updatePasswordService(
-  username:string,
-  content:IUpdatePassword,
-  correlation_id:string
-){
+  username: string,
+  content: IUpdatePassword,
+  correlation_id: string
+) {
   const searchquery = searchInstance();
   const cryptoinstance = cryptohelper();
-  const updatequery= updateInstance()
+  const updatequery = updateInstance();
 
-  const {currentpassword,newpassword}=content
+  const { currentpassword, newpassword } = content;
 
-  if(currentpassword===newpassword){
+  if (currentpassword === newpassword) {
     throw new DatabaseException(
       StatusCodes.BAD_REQUEST,
-        `The new password you entered is same as current password, Please create a new one`
-    )
-
+      `The new password you entered is same as current password, Please create a new one`
+    );
   }
 
-  const searchuser = await searchquery.search(
-    "username",
-    username,
-    userModel
-  );
+  const searchuser = await searchquery.search("username", username, userModel);
 
   if (!searchuser) {
     throw new DatabaseException(
@@ -240,38 +246,245 @@ async function updatePasswordService(
     databaseIv
   );
 
-  const isValidPassword = isComparetwoString(currentpassword, decryptedPassword);
+  const isValidPassword = isComparetwoString(
+    currentpassword,
+    decryptedPassword
+  );
 
-   if (!isValidPassword) {
+  if (!isValidPassword) {
     throw new DatabaseException(
       StatusCodes.BAD_REQUEST,
       `Password Does not Match For the User : ${username} `
     );
   }
-  const encryptedPassword= cryptoinstance.encryptKeys(newpassword)
+  const encryptedPassword = cryptoinstance.encryptKeys(newpassword);
 
-  const {text,key,iv}= encryptedPassword
+  const { text, key, iv } = encryptedPassword;
 
-  const updatedPayload= Object.seal({
+  const updatedPayload = Object.seal({
     password: text,
     passHashKey: key,
-    passIv: iv
+    passIv: iv,
+  });
 
-  })
+  const updatedpayload = await updatequery.updateandreturn(
+    "username",
+    username,
+    updatedPayload,
+    userModel
+  );
+  Object.assign(updatedpayload._doc, {
+    "x-correlation-id": correlation_id,
+  });
 
-  const updatedpayload= await updatequery.updateandreturn('username',username,updatedPayload,userModel)
-  Object.assign(updatedpayload._doc,{
-    "x-correlation-id":correlation_id
-  })
-
-  return{
-    message:'Password Updated',
-    data: excludeObjectKey(updatedpayload._doc,[
+  return {
+    message: "Password Updated",
+    data: excludeObjectKey(updatedpayload._doc, [
       "password",
       "passHashKey",
       "passIv",
-    ])
-}
+    ]),
+  };
 }
 
-export { signupService, loginService, logoutService, updatePasswordService };
+async function forgetPasswordService(
+  content: IForgetPassword
+): Promise<IAPIResponse> {
+  const searchQuery = searchInstance();
+  const emailService = getEmailInstance();
+  const createQuery = createInstance();
+  const { email } = content;
+
+  const isEmailExists = await searchQuery.search("email", email, userModel);
+
+  if (!isEmailExists) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The Email Does not Exists on the Shadow AI System`
+    );
+  }
+  const extractName = isEmailExists._doc.username
+    ? isEmailExists._doc.username
+    : "Empty Name";
+
+  const generateRandomHash = crypto
+    .createHash("sha256")
+    .update(
+      JSON.stringify({
+        ...isEmailExists,
+      })
+    )
+    .digest("hex");
+
+  const currentDate = new Date();
+
+  const twoHoursLater = new Date(currentDate.getTime() + 2 * 60 * 60 * 1000);
+
+  const finalToken = generateRandomHash.concat(`=${isEmailExists.id}`);
+
+  const passwordTokenPayload = Object.preventExtensions({
+    token: finalToken,
+    name: extractName,
+    expiredAt: twoHoursLater,
+  });
+
+  const saveToken = await createQuery.create(
+    passwordTokenPayload,
+    passwordTokenModel
+  );
+
+  const getFrontendResetPasswordLink = await emailService.getRedirectUrl(
+    saveToken._doc ? saveToken._doc.token : saveToken.token
+  );
+
+  const { html, text } = getPasswordResetTemplate(
+    isEmailExists._doc.username,
+    isEmailExists._doc.email,
+    getFrontendResetPasswordLink
+  );
+
+  const emailOptions = Object.freeze({
+    html: html,
+    to: isEmailExists._doc.email,
+    text: text,
+    subject: "Password Reset",
+  } as IEmailOptions);
+
+  await emailService.sendMail(emailOptions);
+  shadowAiLogger.info(
+    `Email sent to ${isEmailExists._doc.email} with admin access details`
+  );
+
+  return {
+    data: {
+      passwordResetAt: new Date().toDateString(),
+    },
+    message: "Please Check your Mail for the Reset Password Confirmation",
+  };
+}
+
+async function checkPasswordResetLinkService(
+  userId: number,
+  tokenId: string,
+  isCheck = false
+): Promise<IAPIResponse | void> {
+  const searchQuery = searchInstance();
+  const isUserExists = await searchQuery.search("_id", userId, userModel);
+
+  if (!isUserExists) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `DatabaseError: There is no User on the System`
+    );
+  }
+
+  const getToken = await searchQuery.search(
+    "token",
+    tokenId,
+    passwordTokenModel
+  );
+
+  if (!getToken) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `DatabaseError: The Token : ${JSON.stringify(tokenId)} Does not Exists`
+    );
+  }
+
+  const getTokenExpiredDate = getToken._doc.expiredAt;
+
+  const currentDate = new Date();
+
+  const isTokenAlreadyExpired = new Date(getTokenExpiredDate) < currentDate;
+
+  if (isTokenAlreadyExpired) {
+    throw new ValidationException(
+      HTTP_STATUS.VALIDATION_ERROR.CODE,
+      `ValidationError: The Token : ${JSON.stringify(
+        tokenId
+      )} is Already Expired, Please Re-send The Reset Verification Link`
+    );
+  }
+
+  return isCheck
+    ? undefined
+    : {
+        data: {
+          expiresAt: new Date(getTokenExpiredDate).toDateString(),
+        },
+        message: `The Password Reset Link is Verified`,
+      };
+}
+
+async function resetPasswordService(
+  payload: IResetPassword,
+  tokenPayload: Record<string, any>
+): Promise<IAPIResponse> {
+  const searchQuery = searchInstance();
+  const updateQuery = updateInstance();
+  const cryptoInstance = cryptohelper();
+  const { tokenId }: { tokenId: string } | any = tokenPayload;
+  const { newPassword } = payload;
+
+  const [token, userId] = tokenId.split("=");
+
+  await checkPasswordResetLinkService(userId, tokenId);
+
+  const isUserExists = await searchQuery.search("_id", userId, userModel);
+
+  const dbPassword = isUserExists._doc.password;
+
+  const databaseHex = isUserExists._doc.passHashKey;
+  const databaseIv = isUserExists._doc.passIv;
+
+  const decryptedPassword = cryptoInstance.decryptKeys(
+    dbPassword,
+    databaseHex,
+    databaseIv
+  );
+
+  const isValidPassword = isComparetwoString(newPassword, decryptedPassword);
+
+  if (isValidPassword) {
+    throw new DatabaseException(
+      StatusCodes.BAD_REQUEST,
+      `Password Match with the Current Password, Please Add Different Password`
+    );
+  }
+
+  const encryptedPassword = cryptoInstance.encryptKeys(newPassword);
+
+  const { text, key, iv } = encryptedPassword;
+
+  const updatedPayload = Object.seal({
+    password: text,
+    passHashKey: key,
+    passIv: iv,
+  });
+
+  const updateOperationPayload = await updateQuery.updateOperation(
+    "_id",
+    userId,
+    updatedPayload,
+    userModel
+  );
+
+  return {
+    message: "Password Has been Reset",
+    data: excludeObjectKey(updateOperationPayload, [
+      "password",
+      "passHashKey",
+      "passIv",
+    ]),
+  };
+}
+
+export {
+  signupService,
+  loginService,
+  logoutService,
+  updatePasswordService,
+  forgetPasswordService,
+  checkPasswordResetLinkService,
+  resetPasswordService,
+};

@@ -6,15 +6,23 @@ import deleteInstance from "../database/operations/delete";
 import searchInstance from "../database/operations/select";
 import shadowAiLogger from "../libs/logger.libs";
 import { UnknownAny } from "../types/types";
+import passwordTokenModel from "../database/entities/passwordToken.model";
 
 async function flushAllRecords() {
   try {
-    const allModels = [userModel, userProfileModel, imageModel, tokenModel];
+    const allModels = [
+      userModel,
+      userProfileModel,
+      imageModel,
+      tokenModel,
+      passwordTokenModel,
+    ];
     const indexModels = [
       "userModel",
       "userProfileModel",
       "imageModel",
       "tokenModel",
+      "passwordTokenModel",
     ];
     const deleteModels = deleteInstance();
     const searchModel = searchInstance();

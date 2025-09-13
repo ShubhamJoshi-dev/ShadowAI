@@ -1,9 +1,11 @@
-import { NextFunction, Request, Response } from "express";
+import e, { NextFunction, Request, Response } from "express";
 import { UnknownAny } from "../types/types";
 import shadowAiLogger from "../libs/logger.libs";
 import {
+  deactivatedUserService,
   editUserProfileService,
   getUserProfileService,
+  removeImageService,
   uploadProfileService,
 } from "../services/user/user.service";
 import getAPIHelperInstance from "../helper/api.helper";
@@ -12,6 +14,7 @@ import userProfileSchema from "../validation/user.validation";
 import { IUserProfile } from "../interface/user.interface";
 import { ZodError } from "zod";
 import StatusCode from "http-status-codes";
+import { da } from "zod/v4/locales/index.cjs";
 
 async function getUserProfile(req: Request, res: Response, next: NextFunction) {
   try {
@@ -84,4 +87,51 @@ async function editUserProfile(
   }
 }
 
-export { getUserProfile, uploadPostController, editUserProfile };
+async function deactivatedUser(
+  req: Request,
+  res: Response,
+  next: NextFunction
+) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const baseUrl = req.originalUrl;
+    const userId = req.user.userId;
+    const queryContent = req.query;
+    const apiPayload = await deactivatedUserService(userId, queryContent);
+    if (apiPayload) {
+      const { data, message } = apiPayload;
+      apiInstance.sendSuccessResponse(res, baseUrl, data, message);
+    }
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error while deactivating the user profile, Due To : ${JSON.stringify(
+        err
+      )}`
+    );
+    next(err);
+  }
+}
+
+async function removeImage(req: Request, res: Response, next: NextFunction) {
+  try {
+    const apiInstance = getAPIHelperInstance();
+    const baseURL = req.originalUrl;
+    const userId = req.user.userId;
+    const apiPayload = await removeImageService(userId);
+    const { data, message } = apiPayload;
+    apiInstance.sendSuccessResponse(res, baseURL, data, message);
+  } catch (err: UnknownAny) {
+    shadowAiLogger.error(
+      `Error while Removing the Image from the User Profile, Due To : ${err}`
+    );
+    next(err);
+  }
+}
+
+export {
+  getUserProfile,
+  uploadPostController,
+  editUserProfile,
+  deactivatedUser,
+  removeImage,
+};
