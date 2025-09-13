@@ -1,6 +1,10 @@
 import { StatusCodes } from "http-status-codes";
 import { BadRequestException, DatabaseException } from "../../exceptions";
-import { ILogin, ISignup, IUpdatePassword } from "../../interface/auth.interface";
+import {
+  ILogin,
+  ISignup,
+  IUpdatePassword,
+} from "../../interface/auth.interface";
 import { IAPIResponse } from "../../interface/api.interface";
 import searchInstance from "../../database/operations/select";
 import userModel from "../../database/entities/user.model";
@@ -119,8 +123,6 @@ async function loginService(content: Required<ILogin>): Promise<IAPIResponse> {
     databaseIv
   );
 
-  
-
   const isValidPassword = isComparetwoString(password, decryptedPassword);
 
   if (!isValidPassword) {
@@ -199,29 +201,24 @@ async function logoutService(
   };
 }
 async function updatePasswordService(
-  username:string,
-  content:IUpdatePassword,
-  correlation_id:string
-){
+  username: string,
+  content: IUpdatePassword,
+  correlation_id: string
+) {
   const searchquery = searchInstance();
   const cryptoinstance = cryptohelper();
-  const updatequery= updateInstance()
+  const updatequery = updateInstance();
 
-  const {currentpassword,newpassword}=content
+  const { currentpassword, newpassword } = content;
 
-  if(currentpassword===newpassword){
+  if (currentpassword === newpassword) {
     throw new DatabaseException(
       StatusCodes.BAD_REQUEST,
-        `The new password you entered is same as current password, Please create a new one`
-    )
-
+      `The new password you entered is same as current password, Please create a new one`
+    );
   }
 
-  const searchuser = await searchquery.search(
-    "username",
-    username,
-    userModel
-  );
+  const searchuser = await searchquery.search("username", username, userModel);
 
   if (!searchuser) {
     throw new DatabaseException(
@@ -240,38 +237,45 @@ async function updatePasswordService(
     databaseIv
   );
 
-  const isValidPassword = isComparetwoString(currentpassword, decryptedPassword);
+  const isValidPassword = isComparetwoString(
+    currentpassword,
+    decryptedPassword
+  );
 
-   if (!isValidPassword) {
+  if (!isValidPassword) {
     throw new DatabaseException(
       StatusCodes.BAD_REQUEST,
       `Password Does not Match For the User : ${username} `
     );
   }
-  const encryptedPassword= cryptoinstance.encryptKeys(newpassword)
+  const encryptedPassword = cryptoinstance.encryptKeys(newpassword);
 
-  const {text,key,iv}= encryptedPassword
+  const { text, key, iv } = encryptedPassword;
 
-  const updatedPayload= Object.seal({
+  const updatedPayload = Object.seal({
     password: text,
     passHashKey: key,
-    passIv: iv
+    passIv: iv,
+  });
 
-  })
+  const updatedpayload = await updatequery.updateandreturn(
+    "username",
+    username,
+    updatedPayload,
+    userModel
+  );
+  Object.assign(updatedpayload._doc, {
+    "x-correlation-id": correlation_id,
+  });
 
-  const updatedpayload= await updatequery.updateandreturn('username',username,updatedPayload,userModel)
-  Object.assign(updatedpayload._doc,{
-    "x-correlation-id":correlation_id
-  })
-
-  return{
-    message:'Password Updated',
-    data: excludeObjectKey(updatedpayload._doc,[
+  return {
+    message: "Password Updated",
+    data: excludeObjectKey(updatedpayload._doc, [
       "password",
       "passHashKey",
       "passIv",
-    ])
-}
+    ]),
+  };
 }
 
 export { signupService, loginService, logoutService, updatePasswordService };

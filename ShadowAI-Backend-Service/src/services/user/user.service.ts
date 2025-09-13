@@ -13,6 +13,7 @@ import filehelperinstance from "../../helper/filestream.helper";
 import updateInstance from "../../database/operations/update";
 import cryptohelper from "../../helper/crypto.helper";
 import { IUserProfile } from "../../interface/user.interface";
+import { email } from "zod";
 
 async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   const searchQuery = searchInstance();
@@ -130,6 +131,7 @@ async function editUserProfileService(
 ): Promise<IAPIResponse> {
   const searchQuery = searchInstance();
   const createQuery = createInstance();
+  const updateQuery = updateInstance();
 
   const deepCopyProfilePayload = JSON.parse(JSON.stringify(content));
 
@@ -142,11 +144,83 @@ async function editUserProfileService(
     );
   }
 
-  console.log(userDocs);
+  const isSamePrimaryAndSecondaryEmail =
+    String(userDocs?._doc?.primaryEmail) === String(content?.secondaryEmail);
+
+  if (isSamePrimaryAndSecondaryEmail) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The Primary Email and the Secondary Email is Same`
+    );
+  }
+
+  const userDeletedStatus = userDocs.isDeleted;
+
+  const isUserDeleted =
+    typeof userDeletedStatus === "boolean" && Boolean(userDeletedStatus);
+
+  if (isUserDeleted) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The User Has been Deleted, Cannot Edit the Deleted User Profile`
+    );
+  }
+
+  const userDeactivated = userDocs.isDeactivated;
+
+  const isUserDeactivated =
+    typeof userDeactivated === "boolean" && Boolean(userDeactivated);
+
+  if (isUserDeactivated) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The User Has been Deactivated, Cannot Edit the Deactivated User Profile`
+    );
+  }
+
+  const updatePayload = Object.preventExtensions({ ...deepCopyProfilePayload });
+
+  const updateOperationResult = await updateQuery.updateOperation(
+    "userId",
+    userId,
+    updatePayload,
+    userProfileModel
+  );
+
+  const isResultUpdated =
+    updateOperationResult.acknowledged &&
+    updateOperationResult.matchedCount > 0;
+
+  if (!isResultUpdated) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The Database Update Operation Did not Successfully Executed`
+    );
+  }
+
+  const mainUserPayload = {} as any;
+  for (const [key, value] of Object.entries(content)) {
+    if (key.includes("name")) {
+      mainUserPayload["username"] = value;
+    }
+
+    if (key.startsWith("primary") && key.endsWith("email")) {
+      mainUserPayload["email"] = value;
+    }
+  }
+
+  if (Object.keys(mainUserPayload).length > 0) {
+    await updateQuery.updateOperation(
+      "_id",
+      userId,
+      mainUserPayload,
+      userModel
+    );
+  }
 
   return {
-    data: "",
-    message: " ",
+    data: isResultUpdated,
+    message: "The Profile Has been Updated Successfully",
   };
 }
 
