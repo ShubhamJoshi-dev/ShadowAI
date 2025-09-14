@@ -230,12 +230,12 @@ async function editUserProfileService(
   }
 
   const mainUserPayload = {} as any;
-  for (const [key, value] of Object.entries(content)) {
-    if (key.includes("name")) {
+  for (const [key, value] of Object.entries(deepCopyProfilePayload)) {
+    if (key.includes("Name")) {
       mainUserPayload["username"] = value;
     }
 
-    if (key.startsWith("primary") && key.endsWith("email")) {
+    if (key.startsWith("primary") && key.endsWith("Email")) {
       mainUserPayload["email"] = value;
     }
   }
