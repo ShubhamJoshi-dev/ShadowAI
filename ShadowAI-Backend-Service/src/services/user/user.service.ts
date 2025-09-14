@@ -28,16 +28,21 @@ import getEmailInstance from "../../helper/smtp.helper";
 import { IEmailOptions } from "../../interface/email.interface";
 import deleteInstance from "../../database/operations/delete";
 import is from "zod/v4/locales/is.cjs";
+import tesseractinstance from "../../helper/tesseract.helper";
+import geminiInstance from "../../helper/gemini.helper";
+import modelResponseMapper from "../../mapper/prompt.mapper";
+import userPreferenceModel from "../../database/entities/userPreference.model";
 
 async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   const searchQuery = searchInstance();
   const imageCrypto = cryptohelper();
-  const userDocs = await searchQuery.searchPopulateTwo(
+  const userDocs = await searchQuery.searchPopulateThree(
     "userId",
     userId,
     userProfileModel,
     "userId",
-    "imageId"
+    "imageId",
+    "userPreferenceId"
   );
 
   if (!userDocs) {
@@ -62,6 +67,12 @@ async function getUserProfileService(userId: string): Promise<IAPIResponse> {
       image: decodedImage64,
     });
   }
+    if (userDocs._doc.userPreferenceId) {
+    const userImageDocs = userDocs._doc.userPreferenceId._doc.userPreference;
+    Object.assign(newPayload, {
+      userPreference: userImageDocs
+    });
+  }
 
   if ("userId" in newPayload) {
     shadowAiLogger.info("Deleting the User ID From the Profile Service");
@@ -70,6 +81,10 @@ async function getUserProfileService(userId: string): Promise<IAPIResponse> {
   if ("imageId" in newPayload) {
     shadowAiLogger.info("Deleting the Image ID From the Profile Service");
     delete newPayload["imageId"];
+  }
+  if ("userPreferenceId" in newPayload) {
+    shadowAiLogger.info("Deleting the User preference ID From the Profile Service");
+    delete newPayload["userPreferenceId"];
   }
 
   return {
@@ -483,6 +498,54 @@ async function removeImageService(userId: string): Promise<IAPIResponse> {
     message: "The Image Has been Removed",
   };
 }
+async function extractImageAndAnalyzeService(
+  userId:string,
+  imagePath:string
+){
+  const searchQuery= searchInstance()
+  const createQuery= createInstance()
+  const updateQuery= updateInstance()
+  const tesseracthelper= tesseractinstance()
+  const geminhelper= geminiInstance()
+  const userDocument = await searchQuery.search(
+    "userId",
+    userId,
+    userProfileModel
+  );
+
+  if (!userDocument) {
+    throw new DatabaseException(
+      HTTP_STATUS.DATABASE_ERROR.CODE,
+      `The User ${userId} Does not Exists on the System`
+    );
+  }
+  const extractfromImage= await tesseracthelper.extractText(imagePath)
+  shadowAiLogger.info(`This is extracted text ${extractfromImage}`)
+
+  const generateRespnse = await geminhelper.generateResponse(extractfromImage as string)
+  shadowAiLogger.info(`This is generateResponse ${generateRespnse}`)
+
+  const mappedResponse = modelResponseMapper(generateRespnse)
+  shadowAiLogger.info(`This is mappedresponse ${mappedResponse}`)
+
+  const sendtodb= Object.seal({
+    userPreference:mappedResponse
+  })
+
+  const savetodb = await createQuery.create(sendtodb,userPreferenceModel)
+
+  const preferanceid = savetodb._id
+
+  const updatedata= Object.seal({
+    userPreferenceId:preferanceid
+  })
+
+  await updateQuery.updateandreturn('userId',userId,updatedata,userProfileModel)
+  return {
+    data:savetodb,
+    message:'Response'
+  }
+}
 
 export {
   getUserProfileService,
@@ -490,4 +553,5 @@ export {
   editUserProfileService,
   deactivatedUserService,
   removeImageService,
+  extractImageAndAnalyzeService
 };

@@ -4,6 +4,7 @@ import { verifyAuthToken } from "../../middlewares/auth.middleware";
 import {
   deactivatedUser,
   editUserProfile,
+  extractImageAndAnalyzeController,
   getUserProfile,
   removeImage,
   uploadPostController,
@@ -11,6 +12,7 @@ import {
 import validateRepeatedToken from "../../middlewares/tokenValidator.middleware";
 import upload from "../../config/multer.config";
 import verifyDeactivatedAndDeleted from "../../middlewares/status.middleware";
+import { extractImageAndAnalyzeService } from "../../services/user/user.service";
 
 const userRouter = Router();
 
@@ -52,5 +54,14 @@ userRouter.delete(
   validateRepeatedToken,
   removeImage
 );
+
+userRouter.post(
+  userRouteConfig["imageExtractandAnalyse"],
+  verifyAuthToken,
+  validateRepeatedToken,
+  upload.single("upload"),
+  extractImageAndAnalyzeController
+
+)
 
 export default userRouter;

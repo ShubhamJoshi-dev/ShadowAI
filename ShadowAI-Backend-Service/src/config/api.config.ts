@@ -21,4 +21,5 @@ export const userRouteConfig = {
   uploadImage: "/user/profile/upload",
   removeImage: "/user/profile/remove-image",
   deactivatedUser: "/user/profile/status",
+  imageExtractandAnalyse:"/user/profile/imageextraction"
 };

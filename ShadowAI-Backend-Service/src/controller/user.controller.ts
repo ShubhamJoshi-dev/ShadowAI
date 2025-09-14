@@ -4,6 +4,7 @@ import shadowAiLogger from "../libs/logger.libs";
 import {
   deactivatedUserService,
   editUserProfileService,
+  extractImageAndAnalyzeService,
   getUserProfileService,
   removeImageService,
   uploadProfileService,
@@ -15,6 +16,7 @@ import { IUserProfile } from "../interface/user.interface";
 import { ZodError } from "zod";
 import StatusCode from "http-status-codes";
 import { da } from "zod/v4/locales/index.cjs";
+import { get } from "http";
 
 async function getUserProfile(req: Request, res: Response, next: NextFunction) {
   try {
@@ -127,6 +129,26 @@ async function removeImage(req: Request, res: Response, next: NextFunction) {
     next(err);
   }
 }
+async function extractImageAndAnalyzeController(req:Request,res:Response,next:NextFunction)
+{
+  try{
+    const apiInstance= getAPIHelperInstance()
+  const baseurl= req.originalUrl
+  const userid = req.user.userId
+  const imagePath= req.file?.path
+  const apiPayload= await extractImageAndAnalyzeService(userid,imagePath as any)
+  const{data,message} =apiPayload
+  apiInstance.sendSuccessResponse(res,baseurl,data,message)
+
+  }
+  catch(err){
+    shadowAiLogger.error(`Error in extractImageAndAnalyzeController `)
+    next(err)
+  }
+  
+
+}
+
 
 export {
   getUserProfile,
@@ -134,4 +156,5 @@ export {
   editUserProfile,
   deactivatedUser,
   removeImage,
+  extractImageAndAnalyzeController
 };

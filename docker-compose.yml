@@ -17,6 +17,12 @@ services:
       - MONGO_URL=mongodb://root:rootpassword@mongo:27017/Shadow-Ai?authSource=admin
       - ACCESS_TOKEN=12345
       - REFRESH_TOKEN=56789
+      - APP_NAME=ShadowAI
+      - APP_PASSWORD=zeqe nnnn ieso pvic
+      - APP_EMAIL=shubhamrajjoshi69@gmail.com
+      - FRONTEND_URL=https://shadow-ai-micro-frontend-service.vercel.app 
+      - API-KEY=AIzaSyASY64Ob6vvRQf0LXlsivgii1DMW8xmqmQ
+      - MODEL-NAME=gemini-1.5-flash
     depends_on:
       - redis
       - mongo

@@ -23,19 +23,21 @@ class SearchOpertaion {
       .populate(modelPopulate);
     return result;
   }
-    public async searchPopulateTwo<T>(
+    public async searchPopulateThree<T>(
     key: string,
     value: T,
     model: any,
     modelPopulate1: string,
-    modelPopulate2: string
+    modelPopulate2: string,
+    modelPopulate3: string
   ) {
     const result = await model
       .findOne({
         [`${key}`]: value,
       })
       .populate(modelPopulate1)
-      .populate(modelPopulate2);
+      .populate(modelPopulate2)
+      .populate(modelPopulate3,"userPreference");
     return result;
   }
 

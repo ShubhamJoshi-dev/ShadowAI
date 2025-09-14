@@ -45,6 +45,10 @@ const userProfileSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Image",
   },
+  userPreferenceId:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:"User-Preference"
+  }
 });
 
 const userProfileModel = mongoose.model("UserProfile", userProfileSchema);
