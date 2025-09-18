@@ -15,22 +15,44 @@ const options: swaggerJSDoc.Options = {
           scheme: 'bearer',
           bearerFormat: 'JWT',
         },
+      },
+      parameters: {
         XCorrelationId: {
-          type: 'apiKey',
+          name: 'X-Correlation-Id',
           in: 'header',
-          name: 'X-Correlation-Id', 
+          required: false,
+          schema: { type: 'string' },
           description: 'Unique ID to trace the request across services.',
+        },
+        StatusFieldParam: {
+          name: 'isparams',
+          in: 'query',
+          required: true,
+          schema: {
+            type: 'string',
+            enum: ['isDeactivated', 'isDeleted'],
+          },
+          example: 'isDeactivated',
+          description: 'The field of the user status to update.',
+        },
+        StatusValueParam: {
+          name: 'value',
+          in: 'query',
+          required: true,
+          schema: {
+            type: 'boolean',
+          },
+          example: false,
+          description: 'The value to set for the status field.',
         },
       },
     },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
+    security: [{ bearerAuth: [] }],
   },
   apis: [path.resolve(__dirname, '../routers/routes/*.js')],
 };
+
+
 
 const swaggerSpec = swaggerJSDoc(options);
 
