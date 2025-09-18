@@ -1,6 +1,9 @@
 {
   "dependencies": {
+    "@types/swagger-jsdoc": "^6.0.4",
     "@types/tesseract.js": "^0.0.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
     "tesseract.js": "^6.0.1"
   }
 }

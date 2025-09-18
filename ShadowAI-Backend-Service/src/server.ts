@@ -10,6 +10,7 @@ import databaseInstance from "./database/connect";
 import flushAllRecords from "./scripts/flush.database";
 import { createJson, deleteFile } from "./utils/create.json";
 import { flushAllEnabled } from "./constant/status.constant";
+import swaggerDocs from "./swagger/swagger.connect";
 
 class ExpressServer extends BaseExpressServer {
   constructor() {
@@ -29,11 +30,13 @@ class ExpressServer extends BaseExpressServer {
     if (flushAllEnabled) {
       await flushAllRecords();
     }
+    swaggerDocs(app,getEnvValue("PORT") as any);
     app.listen(port, () => {
       shadowAiLogger.info(
         `The Backend Server is Running on http://localhost:${port}/api/v1`
       );
-    });
+    })
+    
   }
 }
 
